@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "AxiomPayload": {
+      "title": "Axiom Payload",
+      "description": "The complete generated cognitive structure",
+      "type": "object",
+      "properties": {
+        "concept": { "type": "string" },
+        "uid": { "type": "string", "description": "Optional: User who triggered it" },
+        "payload": { 
+          "type": "object",
+          "description": "The full JSON result from Gemini"
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isManuallySaved": { "type": "boolean" },
+        "rank": { "type": "number", "description": "Relevance/Popularity score" }
+      },
+      "required": ["concept", "payload", "createdAt"]
+    },
+    "GlobalAxiom": {
+      "title": "Global Axiom",
+      "description": "Aggregated data for a unique concept",
+      "type": "object",
+      "properties": {
+        "concept": { "type": "string" },
+        "rank": { "type": "number" },
+        "lastPayload": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["concept", "rank"]
+    },
+    "CommunityVote": {
+      "title": "Community Vote",
+      "description": "Feedback on specific explanation blocks",
+      "type": "object",
+      "properties": {
+        "contentHash": { "type": "string", "description": "Unique ID for the specific text being voted on" },
+        "ups": { "type": "number", "description": "Thumbs up count" },
+        "downs": { "type": "number", "description": "Thumbs down count" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["contentHash", "ups", "downs"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/global_index/{conceptId}": {
+      "schema": "GlobalAxiom",
+      "description": "Global ranking system for concept auto-suggestions"
+    },
+    "/saved_axioms/{axiomId}": {
+      "schema": "AxiomPayload",
+      "description": "User-curated index of axioms"
+    },
+    "/triangulation_logs/{logId}": {
+      "schema": "AxiomPayload",
+      "description": "Automatic history of all system transmutations for pattern learning"
+    },
+    "/community_votes/{voteId}": {
+      "schema": "CommunityVote",
+      "description": "Aggregated helpfulness votes for specific explanation segments"
+    }
+  }
+}
