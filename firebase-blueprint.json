@@ -13,8 +13,8 @@
       },
       "required": ["uid", "email"]
     },
-    "AxiomPayload": {
-      "title": "Axiom Payload",
+    "UnderstandablePayload": {
+      "title": "Understandable Payload",
       "description": "The complete generated cognitive structure",
       "type": "object",
       "properties": {
@@ -30,8 +30,8 @@
       },
       "required": ["concept", "payload", "createdAt"]
     },
-    "GlobalAxiom": {
-      "title": "Global Axiom",
+    "GlobalTopic": {
+      "title": "Global Topic",
       "description": "Aggregated data for a unique concept",
       "type": "object",
       "properties": {
@@ -61,15 +61,15 @@
       "description": "User profiles"
     },
     "/global_index/{conceptId}": {
-      "schema": "GlobalAxiom",
+      "schema": "GlobalTopic",
       "description": "Global ranking system for concept auto-suggestions"
     },
-    "/saved_axioms/{axiomId}": {
-      "schema": "AxiomPayload",
-      "description": "User-curated index of axioms"
+    "/saved_topics/{topicId}": {
+      "schema": "UnderstandablePayload",
+      "description": "User-curated index of topics"
     },
-    "/triangulation_logs/{logId}": {
-      "schema": "AxiomPayload",
+    "/synthesis_logs/{logId}": {
+      "schema": "UnderstandablePayload",
       "description": "Automatic history of all system transmutations for pattern learning"
     },
     "/community_votes/{voteId}": {

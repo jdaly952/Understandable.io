@@ -5,11 +5,11 @@ import { Tooltip } from './Tooltip';
 
 interface CoasterCustomizerProps {
   concept: string;
-  axiomData: any;
+  understandableData: any;
   onClose: () => void;
 }
 
-export default function CoasterCustomizer({ concept, axiomData, onClose }: CoasterCustomizerProps) {
+export default function CoasterCustomizer({ concept, understandableData, onClose }: CoasterCustomizerProps) {
   const [tier, setTier] = useState<'standard' | 'custom'>('standard');
   const [shape, setShape] = useState('circle');
   const [material, setMaterial] = useState('brushed_steel');
@@ -68,7 +68,7 @@ export default function CoasterCustomizer({ concept, axiomData, onClose }: Coast
             animate={{ y: 0, opacity: 1 }}
             className="text-3xl md:text-6xl font-serif uppercase tracking-tight mb-2 md:mb-4"
           >
-            Axiom Anchors
+            Understandable Anchors
           </motion.h1>
           <motion.div 
             initial={{ opacity: 0 }}
@@ -76,7 +76,7 @@ export default function CoasterCustomizer({ concept, axiomData, onClose }: Coast
             transition={{ delay: 0.2 }}
             className="font-mono text-sm tracking-widest text-[#999] uppercase"
           >
-            Not just digital. Physical. Daily.
+            Bringing clarity to the physical world.
           </motion.div>
         </header>
 
@@ -222,10 +222,10 @@ export default function CoasterCustomizer({ concept, axiomData, onClose }: Coast
                   <span className="absolute top-4 md:top-6 right-4 md:right-6 font-mono text-xs md:text-sm opacity-60 font-black">01</span>
                   <div className="text-center px-4">
                     <div className="font-mono text-[10px] md:text-sm uppercase tracking-[0.2em] mb-4 md:mb-6 font-black underline underline-offset-4 md:underline-offset-8 decoration-accent">
-                      {axiomData.axis1?.labelA || "Axis 1 // Success"}
+                      {understandableData.axis1?.labelA || "Axis 1 // Success"}
                     </div>
                     <div className="font-serif text-sm md:text-xl leading-relaxed italic opacity-100 line-clamp-6 font-medium">
-                      "{axiomData.axis1?.stateA || axiomData.stateA}"
+                      "{understandableData.axis1?.stateA || understandableData.stateA}"
                     </div>
                   </div>
                 </div>
@@ -237,10 +237,10 @@ export default function CoasterCustomizer({ concept, axiomData, onClose }: Coast
                   <span className="absolute top-4 md:top-6 right-4 md:right-6 font-mono text-xs md:text-sm opacity-60 font-black">02</span>
                   <div className="text-center px-4">
                     <div className="font-mono text-[10px] md:text-sm uppercase tracking-[0.2em] mb-4 md:mb-6 font-black underline underline-offset-4 md:underline-offset-8 decoration-accent">
-                      {axiomData.axis1?.labelB || "Axis 1 // Struggle"}
+                      {understandableData.axis1?.labelB || "Axis 1 // Struggle"}
                     </div>
                     <div className="font-serif text-sm md:text-xl leading-relaxed italic opacity-100 line-clamp-6 font-medium">
-                      "{axiomData.axis1?.stateB || axiomData.stateB}"
+                      "{understandableData.axis1?.stateB || understandableData.stateB}"
                     </div>
                   </div>
                 </div>
@@ -255,7 +255,7 @@ export default function CoasterCustomizer({ concept, axiomData, onClose }: Coast
                       Axis 3 // Zenith
                     </div>
                     <div className="font-serif text-lg md:text-3xl leading-relaxed font-black">
-                      {axiomData.axis3?.zenith || axiomData.axiom}
+                      {understandableData.axis3?.zenith || understandableData.axiom}
                     </div>
                   </div>
                 </div>
@@ -273,7 +273,7 @@ export default function CoasterCustomizer({ concept, axiomData, onClose }: Coast
                       {concept}
                     </div>
                     <div className="mt-4 md:mt-8 pt-4 md:pt-8 border-t-2 border-current/20 font-mono text-xs md:text-sm uppercase tracking-widest font-black text-accent">
-                      {axiomData.domainEmoji} {axiomData.domain}
+                      {understandableData.domainEmoji} {understandableData.domain}
                     </div>
                   </div>
                 </div>

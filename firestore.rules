@@ -38,29 +38,29 @@ service cloud.firestore {
     function isValidUser(data) {
       return data.uid is string && data.uid == request.auth.uid &&
              data.email is string && data.email.size() <= 200 &&
-             (data.displayName == null || (data.displayName is string && data.displayName.size() <= 100)) &&
-             (data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 500)) &&
-             data.createdAt is timestamp;
+             (data.get('displayName', null) == null || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (data.get('photoURL', null) == null || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+             data.createdAt == request.time;
     }
 
-    function isValidAxiom(data) {
+    function isValidUnderstandable(data) {
       return data.concept is string && data.concept.size() <= 500 &&
              data.payload is map &&
-             data.createdAt is timestamp &&
-             (data.uid == null || (data.uid is string && (data.uid == request.auth.uid || data.uid == "null")));
+             data.createdAt == request.time &&
+             (data.get('uid', null) == null || (data.uid is string && (data.uid.size() <= 128)));
     }
 
     function isValidVote(data) {
       return data.contentHash is string && data.contentHash.size() <= 128 &&
              data.ups is int && data.downs is int &&
-             data.updatedAt is timestamp;
+             data.updatedAt == request.time;
     }
 
     function isValidGlobal(data) {
       return data.concept is string && data.concept.size() <= 500 &&
              data.rank is int &&
              data.lastPayload is map &&
-             data.updatedAt is timestamp;
+             data.updatedAt == request.time;
     }
 
     // ===============================================================
@@ -78,35 +78,35 @@ service cloud.firestore {
                     incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'email']);
     }
 
-    match /saved_axioms/{axiomId} {
+    match /saved_topics/{topicId} {
       // Identity Locked Collection
-      allow get: if isSignedIn() && existing().uid == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
-      allow create: if isSignedIn() && isValidAxiom(incoming()) && incoming().uid == request.auth.uid;
-      allow delete: if isSignedIn() && existing().uid == request.auth.uid;
+      // Handle document level get
+      allow get: if isSignedIn() && existing().get('uid', null) == request.auth.uid;
+      
+      // Handle collection queries (list)
+      // Every document in the result MUST have uid == request.auth.uid
+      allow list: if isSignedIn() && resource.data.get('uid', null) == request.auth.uid;
+      
+      allow create: if isSignedIn() && isValidUnderstandable(incoming()) && incoming().uid == request.auth.uid;
+      allow delete: if isSignedIn() && existing().get('uid', null) == request.auth.uid;
     }
 
-    match /triangulation_logs/{logId} {
-      // System History Collection
-      allow create: if isValidAxiom(incoming());
-      allow list: if isSignedIn() && resource.data.uid != "PRIVATE_ONLY"; // Just to force relational check if needed
-      allow get: if isSignedIn();
-      // More liberal list for triangulation logs as they are a public index in this app
-      allow list: if isSignedIn();
+    match /synthesis_logs/{logId} {
+      // History of public transmutations
+      allow get: if true;
+      allow list: if true;
+      allow create: if isValidUnderstandable(incoming());
     }
 
     match /global_index/{conceptId} {
-      // Aggregate Ranking Collection
       allow read: if true;
-      allow create: if isValidGlobal(incoming());
-      allow update: if isValidGlobal(incoming()); // This is liberal but matches the ranking use case
+      allow write: if true; // Democratic ranking
     }
 
     match /community_votes/{voteId} {
-      // Collaborative Feedback Collection
       allow read: if true;
-      allow create: if isSignedIn() && isValidVote(incoming());
-      allow update: if isSignedIn() && isValidVote(incoming());
+      allow create: if isValidVote(incoming());
+      allow update: if isValidVote(incoming());
     }
   }
 }

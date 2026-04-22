@@ -36,8 +36,8 @@ async function startServer() {
             price_data: {
               currency: "usd",
               product_data: {
-                name: `Axiom Vector Engraving: ${concept.toUpperCase()}`,
-                description: "Digital generation & secure distribution of precise SVG cut path logic calculated by the Axiom Engine for a Glowforge.",
+                name: `Understandable Vector Engraving: ${concept.toUpperCase()}`,
+                description: "Digital generation & secure distribution of precise SVG cut path logic calculated by the Understandable Engine for a Glowforge.",
               },
               unit_amount: 4900,
             },
