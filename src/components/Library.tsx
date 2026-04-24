@@ -175,69 +175,69 @@ export const Library: React.FC<LibraryProps> = ({ onClose, onSelectItem, showFee
         <div className="max-w-7xl mx-auto w-full">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-40 gap-6">
-               <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-               <p className="font-mono text-sm uppercase tracking-[0.4em] font-black animate-pulse">Syncing Knowledge Nodes...</p>
+               <div className="w-12 h-12 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+               <p className="font-mono text-[9px] uppercase tracking-[0.4em] font-bold animate-pulse opacity-40">Syncing Knowledge Nodes...</p>
             </div>
           ) : !selectedCategory && !searchQuery ? (
             /* Category Grid */
             <>
               {categories.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {categories.map((cat) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {categories.map((cat, i) => (
                     <button
-                      key={cat.id}
+                      key={`cat-${cat.id || cat.name}`}
                       onClick={() => setSelectedCategory(cat)}
-                      className="group flex flex-col p-10 bg-surface border-4 border-border rounded-[3rem] hover:border-accent hover:-translate-y-2 transition-all text-left shadow-[12px_12px_0_0_rgba(0,0,0,0.02)]"
+                      className="group flex flex-col p-8 bg-surface border border-border rounded-2xl hover:border-accent/40 hover:shadow-xl transition-all text-left shadow-sm relative overflow-hidden"
                     >
-                      <div className="w-16 h-16 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                        {cat.icon === 'Cpu' ? <Cpu size={32} /> : <Code2 size={32} />}
+                      <div className="w-12 h-12 bg-accent/5 text-accent rounded-xl flex items-center justify-center mb-6 group-hover:bg-accent group-hover:text-bg transition-all">
+                        {cat.icon === 'Cpu' ? <Cpu size={24} /> : <Code2 size={24} />}
                       </div>
-                      <h3 className="text-2xl font-black uppercase tracking-tight mb-3 group-hover:text-accent transition-colors">{cat.name}</h3>
-                      <p className="text-ink/60 text-sm leading-relaxed mb-8">{cat.description}</p>
+                      <h3 className="text-xl font-display font-medium tracking-tight mb-2 group-hover:text-accent transition-colors">{cat.name}</h3>
+                      <p className="text-ink/60 text-xs leading-relaxed mb-6 line-clamp-2">{cat.description}</p>
                       <div className="mt-auto flex items-center justify-between">
-                        <span className="font-mono text-[10px] uppercase tracking-widest opacity-40">
+                        <span className="font-mono text-[9px] uppercase tracking-widest opacity-30">
                           {items.filter(it => it.categoryId === cat.id).length} Concepts
                         </span>
-                        <ChevronRight size={20} className="opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all text-accent" />
+                        <ChevronRight size={16} className="opacity-0 group-hover:opacity-40 translate-x-[-8px] group-hover:translate-x-0 transition-all text-accent" />
                       </div>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-40 opacity-40 text-center">
-                   <BookOpen size={48} className="mb-8" />
-                   <h3 className="text-3xl font-display font-black uppercase mb-4">Library Empty</h3>
-                   <p className="font-mono text-sm uppercase tracking-widest max-w-sm">No structured categories found in the core index.</p>
+                <div className="flex flex-col items-center justify-center py-40 opacity-20 text-center">
+                   <BookOpen size={32} className="mb-6" />
+                   <h3 className="text-xl font-display font-medium uppercase mb-2">Library Empty</h3>
+                   <p className="font-mono text-[9px] uppercase tracking-widest max-w-xs">No structured categories found in the core index.</p>
                 </div>
               )}
             </>
           ) : (
             /* Item List */
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-3">
               {filteredItems.map((item, i) => (
                 <motion.button
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  key={`item-${item.id}-${i}`}
+                  transition={{ delay: i * 0.03 }}
+                  key={`item-${item.id}`}
                   onClick={() => handleItemClick(item)}
-                  className="group w-full max-w-4xl mx-auto flex items-center p-8 bg-surface border-2 border-border rounded-[2rem] hover:border-accent hover:shadow-[8px_8px_0_0_rgba(255,107,107,0.1)] transition-all text-left"
+                  className="group w-full max-w-4xl mx-auto flex items-center p-6 bg-surface border border-border rounded-xl hover:border-accent/40 hover:bg-accent/[0.01] transition-all text-left"
                 >
-                  <div className="w-14 h-14 bg-accent/5 text-accent rounded-xl flex items-center justify-center mr-8 group-hover:scale-110 transition-transform">
-                    {item.icon === 'Zap' ? <Zap size={24} /> : 
-                     item.icon === 'Layers' ? <Layers size={24} /> :
-                     item.icon === 'Terminal' ? <Terminal size={24} /> :
-                     item.icon === 'Search' ? <Search size={24} /> :
-                     <Lightbulb size={24} />}
+                  <div className="w-12 h-12 bg-accent/5 text-accent rounded-lg flex items-center justify-center mr-6 group-hover:scale-105 transition-transform">
+                    {item.icon === 'Zap' ? <Zap size={20} /> : 
+                     item.icon === 'Layers' ? <Layers size={20} /> :
+                     item.icon === 'Terminal' ? <Terminal size={20} /> :
+                     item.icon === 'Search' ? <Search size={20} /> :
+                     <Lightbulb size={20} />}
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-xl font-black uppercase tracking-tight mb-1 group-hover:text-accent transition-colors">{item.title}</h4>
-                    <p className="text-ink/50 text-sm">{item.shortDescription}</p>
+                    <h4 className="text-lg font-medium tracking-tight group-hover:text-accent transition-colors">{item.title}</h4>
+                    <p className="text-ink/40 text-xs mt-0.5">{item.shortDescription}</p>
                   </div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all text-accent font-black mr-6">
-                    Expand Details
+                  <div className="font-mono text-[9px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all text-accent font-bold mr-6">
+                    View
                   </div>
-                  <ChevronRight size={24} className="opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                  <ChevronRight size={20} className="opacity-10 group-hover:opacity-40 group-hover:translate-x-1 transition-all" />
                 </motion.button>
               ))}
 

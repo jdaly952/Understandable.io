@@ -444,36 +444,36 @@ const ELI9Card = ({ content }: { content?: string }) => {
     <div className="mt-8 mb-4">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-4 p-2 pr-6 rounded-full border-2 transition-all hover:-translate-y-0.5 active:translate-y-0
+        className={`flex items-center gap-4 p-2 pr-6 rounded-full border transition-all hover:bg-accent/[0.02]
           ${isOpen 
-            ? 'bg-accent/5 border-accent/20 text-accent' 
+            ? 'bg-accent/[0.03] border-accent/20 text-accent' 
             : 'bg-surface border-border text-ink opacity-60 hover:opacity-100'}
-          shadow-[4px_4px_0_0_rgba(0,0,0,0.02)]
         `}
       >
-        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center ${isOpen ? 'bg-accent/20' : 'bg-black/5'}`}>
-           <Heart className="w-3 h-3 md:w-4 md:h-4" />
+        <div className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center ${isOpen ? 'bg-accent/20' : 'bg-black/5'}`}>
+           <Heart className="w-3 h-3 md:w-3.5 md:h-3.5" />
         </div>
-        <div className="flex flex-col items-start leading-none gap-1">
-          <span className="font-serif italic text-xs md:text-sm font-bold">Simple Essence</span>
-          <span className="text-[10px] font-mono uppercase tracking-[0.2em] opacity-80">{isOpen ? 'Closing' : 'View Distillation'}</span>
+        <div className="flex flex-col items-start leading-none gap-0.5">
+          <span className="font-sans text-xs md:text-sm font-bold">Simplified Perspective</span>
+          <span className="text-[9px] font-mono uppercase tracking-[0.1em] opacity-50">{isOpen ? 'Back' : 'Distill'}</span>
         </div>
       </button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            key="eli9-content"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="mt-6 overflow-hidden rounded-[2.5rem] border border-accent/20 bg-accent/[0.02]"
+            className="mt-4 overflow-hidden rounded-2xl border border-accent/10 bg-accent/[0.01]"
           >
-            <div className="p-8 md:p-12">
-                <div className="flex items-center justify-between mb-8">
-                  <SectionLabel className="!text-lg">Core Distillation</SectionLabel>
+            <div className="p-8 md:p-10">
+                <div className="flex items-center justify-between mb-6">
+                  <SectionLabel className="!text-sm font-mono uppercase tracking-widest opacity-40">Core Essence</SectionLabel>
                   <UnderstandableVoice text={content} />
                 </div>
-               <p className="text-xl md:text-4xl font-serif italic font-semibold leading-relaxed text-pretty text-accent">
+               <p className="text-xl md:text-3xl font-sans font-medium leading-relaxed text-pretty text-accent">
                  {content}
                </p>
             </div>
@@ -502,6 +502,7 @@ const AhaSparkle = ({ active, status, concept }: { active: boolean, status: "lin
   <AnimatePresence>
     {active && (
       <motion.div
+        key="aha-sparkle-container"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -509,6 +510,7 @@ const AhaSparkle = ({ active, status, concept }: { active: boolean, status: "lin
       >
         {/* Background Flash */}
         <motion.div 
+          key="sparkle-flash"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: [0, 0.4, 0], scale: [0.8, 1.5] }}
           transition={{ duration: 1.2 }}
@@ -534,43 +536,38 @@ const AhaSparkle = ({ active, status, concept }: { active: boolean, status: "lin
 
         {/* Success Modal */}
         <motion.div
-          initial={{ y: 100, opacity: 0, scale: 0.5, rotate: -5 }}
-          animate={{ y: 0, opacity: 1, scale: 1, rotate: 0 }}
-          exit={{ y: -100, opacity: 0, scale: 1.2 }}
-          transition={{ type: "spring", damping: 12, stiffness: 100 }}
-          className="bg-bg border-8 border-current p-10 md:p-16 rounded-[4rem] shadow-[40px_40px_0_0_rgba(0,0,0,0.1)] flex flex-col items-center gap-8 text-center z-[101] max-w-xl mx-4"
+          key="sparkle-success-modal"
+          initial={{ y: 100, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: -100, opacity: 0, scale: 1.05 }}
+          transition={{ type: "spring", damping: 15, stiffness: 120 }}
+          className="bg-bg border border-border p-6 md:p-14 rounded-[2.5rem] md:rounded-[3rem] shadow-2xl flex flex-col items-center gap-6 md:gap-8 text-center z-[101] max-w-xl mx-4"
         >
           <div className="relative">
-            <div className="w-16 h-16 md:w-20 md:h-20 bg-accent rounded-full flex items-center justify-center text-bg shadow-[0_0_50px_rgba(74,103,65,0.6)] animate-pulse">
-              {status === 'new_discovery' ? <Rocket size={32} /> : <Sparkles size={32} />}
+            <div className="w-12 h-12 md:w-20 md:h-20 bg-accent text-bg rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
+              {status === 'new_discovery' ? <Rocket className="w-6 h-6 md:w-8 md:h-8" /> : <Sparkles className="w-6 h-6 md:w-8 md:h-8" />}
             </div>
-            <motion.div 
-              animate={{ rotate: 360 }}
-              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-              className="absolute -inset-4 border-2 border-dashed border-accent rounded-full opacity-30"
-            />
           </div>
 
           <div className="flex flex-col gap-2">
-            <span className="font-mono text-[10px] md:text-sm uppercase tracking-[0.6em] font-black italic opacity-40">Cognitive Mastery Achieved</span>
-            <h2 className="font-display text-4xl md:text-7xl font-black uppercase tracking-tighter text-ink leading-tight">
-              Understanding locked in!
+            <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] font-bold opacity-30 italic">Perspective Inducted</span>
+            <h2 className="font-display text-4xl md:text-5xl font-medium tracking-tight text-ink leading-tight">
+              Understanding Locked In
             </h2>
-            <div className="h-2 w-24 bg-accent mx-auto rounded-full mt-4" />
           </div>
 
-          <p className="font-serif italic text-2xl md:text-3xl opacity-80 leading-relaxed max-w-sm">
+          <p className="font-sans font-medium text-xl md:text-2xl opacity-60 leading-relaxed max-w-sm">
             "{concept}"
           </p>
 
           {status === 'new_discovery' && (
             <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="font-mono text-[10px] md:text-xs uppercase tracking-widest text-accent bg-accent/10 px-8 py-4 rounded-full border-2 border-accent/20"
+              className="font-mono text-[9px] uppercase tracking-widest text-accent bg-accent/5 px-6 py-3 rounded-xl border border-accent/10"
             >
-              Added to the Global Index — thanks for contributing to the community!
+              Synchronized with the global index
             </motion.div>
           )}
 
@@ -1143,8 +1140,9 @@ function UnderstandableEngine() {
   }, [globalLogs, vaultSuggestions, savedUnderstandables]);
 
   const renderConceptCard = (ax: any, i: number, group: string, layout: "card" | "row" = "card") => {
-    const cardId = ax.id || `temp-${ax.concept}-${i}`;
-    const uniqueKey = `${group}-${cardId}-${indexType}-${i}`;
+    // Rely on id, concept, and index for uniqueness
+    const id = ax.id || ax.concept || `no-id-${group}-${i}`;
+    const uniqueKey = `axon-${group}-${layout}-${id}-${i}`;
     const tags = ax.tags || ax.payload?.tags || [];
     const relationships = ax.relationships || ax.payload?.relatedConcepts || [];
 
@@ -1183,19 +1181,19 @@ function UnderstandableEngine() {
             {tags.length > 0 && (
               <div className="hidden lg:flex gap-2">
                 {tags.slice(0, 2).map((tag: string, tagIdx: number) => (
-                  <span key={`tag-${tag}-${tagIdx}`} className="font-mono text-[8px] uppercase tracking-widest border border-current/20 px-2 py-0.5 rounded-full opacity-60">
+                  <span key={`${uniqueKey}-tag-${tag}-${tagIdx}`} className="font-mono text-[8px] uppercase tracking-widest border border-current/20 px-2 py-0.5 rounded-full opacity-60">
                     #{tag}
                   </span>
                 ))}
               </div>
             )}
             <div className="flex items-center gap-2">
-              <button 
+              <div 
                 onClick={(e) => handleShare(e, ax)}
-                className={`p-2 rounded-full transition-all ${copiedId === (ax.id || ax.concept) ? "text-green-500" : "text-current/40 hover:text-accent hover:bg-current/5"}`}
+                className={`p-2 cursor-pointer rounded-full transition-all ${copiedId === (ax.id || ax.concept) ? "text-green-500" : "text-current/40 hover:text-accent hover:bg-current/5"}`}
               >
                 {copiedId === (ax.id || ax.concept) ? <span className="font-mono text-[8px] font-black">COPIED</span> : <Share2 className="w-4 h-4" />}
-              </button>
+              </div>
               <ArrowRight className="w-5 h-5 text-accent opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
             </div>
           </div>
@@ -1212,48 +1210,48 @@ function UnderstandableEngine() {
           setShowIndex(false);
           setAxiomStep(0);
         }}
-        className="group relative flex flex-col p-8 md:p-10 transition-all bg-bg border-2 md:border-4 border-current/5 hover:border-accent text-left rounded-[2rem] shadow-[10px_10px_0_0_rgba(0,0,0,0.02)] hover:shadow-[20px_20px_0_0_rgba(74,103,65,0.05)] hover:-translate-y-2 hover:-translate-x-2"
+        className="group relative flex flex-col p-8 md:p-10 transition-all bg-bg border border-border hover:border-accent text-left rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1"
       >
         <div className="flex justify-between items-start mb-6">
-          <span className="font-mono text-[10px] opacity-20 uppercase tracking-widest font-black">TRUTH_{(i+1).toString().padStart(3, '0')}</span>
+          <span className="font-mono text-[9px] opacity-20 uppercase tracking-widest font-bold">Node_{(i+1).toString().padStart(3, '0')}</span>
           <div className="flex items-center gap-3">
-             <button 
-               onClick={(e) => handleShare(e, ax)}
-               className={`p-2 rounded-lg transition-all border ${copiedId === (ax.id || ax.concept) ? "bg-green-500/20 border-green-500/50 text-green-500" : "bg-bg border-current/5 hover:border-accent text-accent"}`}
+             <div 
+                onClick={(e) => handleShare(e, ax)}
+                className={`p-2 rounded-lg transition-all border cursor-pointer ${copiedId === (ax.id || ax.concept) ? "bg-green-500/20 border-green-500/50 text-green-500" : "bg-bg border-current/5 hover:border-accent text-accent"}`}
              >
-               {copiedId === (ax.id || ax.concept) ? <span className="font-mono text-[8px] font-black">COPIED!</span> : <Share2 className="w-3 h-3" />}
-             </button>
+               {copiedId === (ax.id || ax.concept) ? <span className="font-mono text-[7px] font-bold">COPIED</span> : <Share2 className="w-3 h-3" />}
+             </div>
              {indexType === 'global' && (
-               <button 
+               <div 
                  onClick={(e) => { e.stopPropagation(); setReportingConcept(ax.concept); }}
-                 className="p-2 rounded-lg transition-all border bg-bg border-current/5 hover:border-soft-red text-soft-red opacity-40 hover:opacity-100"
+                 className="p-2 rounded-lg transition-all border bg-bg border-current/5 hover:border-soft-red text-soft-red opacity-40 hover:opacity-100 cursor-pointer"
                  title="Report content"
                >
                  <AlertTriangle className="w-3 h-3" />
-               </button>
+               </div>
              )}
              {ax.affirmationCount > 10 && (
-               <span className="font-mono text-[8px] bg-accent/10 text-accent px-3 py-1 rounded-full font-bold border border-accent/20 uppercase">Core Pillar</span>
+               <span className="font-mono text-[8px] bg-accent/10 text-accent px-3 py-1 rounded-full font-bold border border-accent/20 uppercase">Core Node</span>
              )}
-             <span className="font-mono text-[9px] uppercase tracking-widest font-black opacity-40 bg-current/5 px-3 py-1 rounded-full flex items-center gap-2">
+             <span className="font-mono text-[8px] uppercase tracking-widest font-bold opacity-30 bg-current/5 px-2.5 py-1 rounded-full flex items-center gap-2">
                {ax.domainEmoji && <span>{ax.domainEmoji}</span>}
                {ax.domain || ax.payload?.domain || "General"}
              </span>
           </div>
         </div>
         
-        <h3 className="text-xl md:text-3xl font-black uppercase tracking-tight mb-4 group-hover:text-accent transition-colors line-clamp-2 leading-none">
+        <h3 className="text-xl md:text-2xl font-medium tracking-tight mb-4 group-hover:text-accent transition-colors line-clamp-2 leading-tight">
           {ax.concept}
         </h3>
         
-        <p className="text-sm md:text-base opacity-60 font-sans leading-relaxed line-clamp-3 mb-6 flex-1 italic">
+        <p className="text-sm opacity-50 font-sans leading-relaxed line-clamp-3 mb-6 flex-1">
           "{(ax.payload?.zenith || ax.zenith || ax.payload?.hook || ax.hook || "Synthesis complete.")}"
         </p>
 
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
             {tags.slice(0, 3).map((tag: string, tagIdx: number) => (
-              <span key={`group-tag-${tag}-${tagIdx}`} className="font-mono text-[8px] uppercase tracking-widest border border-current/10 px-2 py-0.5 rounded-full opacity-40 group-hover:opacity-100 group-hover:border-accent/40 transition-all">
+              <span key={`${uniqueKey}-group-tag-${tag}-${tagIdx}`} className="font-mono text-[8px] uppercase tracking-widest border border-border px-2 py-0.5 rounded-full opacity-30 group-hover:opacity-100 group-hover:border-accent/40 transition-all">
                 #{tag}
               </span>
             ))}
@@ -1263,24 +1261,24 @@ function UnderstandableEngine() {
         {relationships.length > 0 && (
           <div className="mb-6 flex items-center gap-2 overflow-hidden">
              <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
-             <span className="font-mono text-[8px] uppercase tracking-widest opacity-30 whitespace-nowrap">Links to: {relationships.join(", ")}</span>
+             <span className="font-mono text-[8px] uppercase tracking-widest opacity-20 whitespace-nowrap">Links: {relationships.join(", ")}</span>
           </div>
         )}
 
         {(ax.whyItMatters || ax.payload?.whyItMatters) && (
-          <div className="mb-8 p-6 bg-accent/[0.03] border-l-4 border-accent rounded-r-2xl">
-            <p className="font-mono text-[9px] uppercase tracking-[0.3em] font-black opacity-30 mb-2 whitespace-nowrap">Impact Analysis</p>
-            <p className="text-xs md:text-sm font-sans leading-relaxed opacity-70 italic line-clamp-2">{ax.whyItMatters || ax.payload?.whyItMatters}</p>
+          <div className="mb-8 p-6 bg-accent/[0.02] border-l-2 border-accent/30 rounded-r-xl">
+            <p className="font-mono text-[8px] uppercase tracking-[0.3em] font-bold opacity-20 mb-2 whitespace-nowrap">Context Analysis</p>
+            <p className="text-xs font-sans leading-relaxed opacity-60 italic line-clamp-2">{ax.whyItMatters || ax.payload?.whyItMatters}</p>
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-6 border-t border-current/5">
+        <div className="flex items-center justify-between pt-6 border-t border-border/40">
            <div className="flex gap-2">
-             {ax.payload?.axis1 && <div className="w-3 h-3 bg-green-500/20 rounded-full" />}
-             {ax.payload?.axis2 && <div className="w-3 h-3 bg-blue-500/20 rounded-full" />}
-             {ax.payload?.axis3 && <div className="w-3 h-3 bg-accent/20 rounded-full" />}
+             {ax.payload?.axis1 && <div className="w-2.5 h-2.5 bg-green-500/20 rounded-full" />}
+             {ax.payload?.axis2 && <div className="w-2.5 h-2.5 bg-blue-500/20 rounded-full" />}
+             {ax.payload?.axis3 && <div className="w-2.5 h-2.5 bg-accent/20 rounded-full" />}
            </div>
-           <ArrowRight className="w-5 h-5 text-accent opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
+           <ArrowRight className="w-4 h-4 text-accent opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
         </div>
       </button>
     );
@@ -1855,7 +1853,7 @@ function UnderstandableEngine() {
   const isSlideMode = !!result && !showIndex && !showLibrary && !showDiscovery;
 
   return (
-    <div className={`min-h-screen transition-colors duration-700 relative flex flex-col ${isSlideMode ? 'h-screen overflow-hidden' : 'overflow-x-hidden overflow-y-auto'} bg-grid bg-bg text-ink`}>
+    <div className={`min-h-screen transition-colors duration-700 relative flex flex-col ${isSlideMode ? 'h-[100dvh] overflow-hidden' : 'overflow-x-hidden overflow-y-auto'} bg-grid bg-bg text-ink`}>
       <div className={`w-full ${isSlideMode ? 'h-full' : 'min-h-screen'} flex flex-col relative bg-inherit`}>
         {/* Onboarding Overlay */}
         <AnimatePresence>
@@ -1872,88 +1870,88 @@ function UnderstandableEngine() {
                 initial={{ y: 30, opacity: 0, scale: 0.95 }}
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: -30, opacity: 0, scale: 1.05 }}
-                className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6 md:p-16 lg:p-24 rounded-[2rem] md:rounded-[3rem] border-[6px] md:border-[12px] border-white shadow-2xl bg-[#FFFDF9] text-slate-900"
+                className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6 md:p-12 rounded-3xl border border-white/20 shadow-2xl bg-white text-slate-900"
               >
-                <div className="flex flex-col gap-6 md:gap-14">
-                  <div className="flex items-center justify-between text-xs md:text-sm font-black uppercase tracking-[0.3em] opacity-40 font-mono">
-                    <span className="flex items-center gap-3">
-                       <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
-                       Hello! Idea {onboardingStep + 1} of 4
+                <div className="flex flex-col gap-6 md:gap-8">
+                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] opacity-30 font-mono">
+                    <span className="flex items-center gap-2">
+                       <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                       Principle {onboardingStep + 1} of 4
                     </span>
                     <button 
                       onClick={() => {
                         setShowOnboarding(false);
                         localStorage.setItem("understandable-onboarded", "true");
                       }}
-                      className="hover:text-accent transition-colors underline decoration-2 underline-offset-4"
+                      className="hover:text-accent transition-colors underline decoration-1 underline-offset-4"
                     >
-                      Skip Walkthrough
+                      Skip
                     </button>
                   </div>
 
                   {onboardingStep === 0 && (
-                    <div className="flex flex-col gap-6 md:gap-10">
-                      <div className="w-12 h-12 md:w-16 md:h-16 bg-yellow-100 rounded-xl md:rounded-2xl flex items-center justify-center text-yellow-600 shadow-inner">
-                        <Lightbulb size={24} className="md:w-8 md:h-8" strokeWidth={2.5} />
+                    <div className="flex flex-col gap-4">
+                      <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center text-yellow-600">
+                        <Lightbulb size={20} />
                       </div>
-                      <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
-                        Ask about <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">anything!</span>
+                      <h2 className="font-display text-3xl md:text-4xl font-medium leading-tight tracking-tight">
+                        Inquiry without <span className="text-accent underline decoration-2 underline-offset-4 decoration-accent/10">friction.</span>
                       </h2>
-                      <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
-                        Curious about the moon? Or why toast is crunchy? Just type it in and we'll tell you a story that makes it clear as day! 🎈
+                      <p className="font-sans text-base md:text-lg text-slate-500 leading-relaxed">
+                        Curious about the moon? Or why toast is crunchy? Ask anything and we'll synthesize an explanation that feels intuitive.
                       </p>
                     </div>
                   )}
 
                   {onboardingStep === 1 && (
-                    <div className="flex flex-col gap-6 md:gap-10">
-                      <div className="w-12 h-12 md:w-16 md:h-16 bg-sky-100 rounded-xl md:rounded-2xl flex items-center justify-center text-sky-600 shadow-inner">
-                        <Smile size={24} className="md:w-8 md:h-8" strokeWidth={2.5} />
+                    <div className="flex flex-col gap-4">
+                      <div className="w-10 h-10 bg-sky-50 rounded-lg flex items-center justify-center text-sky-600">
+                        <Smile size={20} />
                       </div>
-                      <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
-                        It grows <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">with you!</span>
+                      <h2 className="font-display text-3xl md:text-4xl font-medium leading-tight tracking-tight">
+                        Cognitive <span className="text-accent underline decoration-2 underline-offset-4 decoration-accent/10">adaptation.</span>
                       </h2>
-                      <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
-                        The more we talk, the better I get at explaining things just the way you like. It's like having a friend who always knows the best way to help! 🌱
+                      <p className="font-sans text-base md:text-lg text-slate-500 leading-relaxed">
+                        The engine learns your mental models. The more you explore, the more precise and helpful the syntheses become.
                       </p>
                     </div>
                   )}
 
                   {onboardingStep === 2 && (
-                    <div className="flex flex-col gap-6 md:gap-10">
-                      <div className="w-12 h-12 md:w-16 md:h-16 bg-rose-100 rounded-xl md:rounded-2xl flex items-center justify-center text-rose-600 shadow-inner">
-                        <Heart size={24} className="md:w-8 md:h-8" strokeWidth={2.5} />
+                    <div className="flex flex-col gap-4">
+                      <div className="w-10 h-10 bg-rose-50 rounded-lg flex items-center justify-center text-rose-600">
+                        <Heart size={20} />
                       </div>
-                      <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
-                         High-fives for <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">Aha's!</span>
+                      <h2 className="font-display text-3xl md:text-4xl font-medium leading-tight tracking-tight">
+                         Collaborative <span className="text-accent underline decoration-2 underline-offset-4 decoration-accent/10">clarity.</span>
                       </h2>
-                      <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
-                        When a story clicks for you, give it a thumbs up. It helps everyone else find the best secrets to understanding too! ✨
+                      <p className="font-sans text-base md:text-lg text-slate-500 leading-relaxed">
+                        Affirming an explanation helps refine the global knowledge graph, ensuring better understanding for all explorers.
                       </p>
                     </div>
                   )}
 
                   {onboardingStep === 3 && (
-                    <div className="flex flex-col gap-6 md:gap-10">
-                      <div className="w-12 h-12 md:w-16 md:h-16 bg-indigo-100 rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner">
-                        <Sparkles size={24} className="md:w-8 md:h-8" strokeWidth={2.5} />
+                    <div className="flex flex-col gap-4">
+                      <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+                        <Sparkles size={20} />
                       </div>
-                      <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
-                         Building your <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">world!</span>
+                      <h2 className="font-display text-3xl md:text-4xl font-medium leading-tight tracking-tight">
+                         Knowledge <span className="text-accent underline decoration-2 underline-offset-4 decoration-accent/10">architecture.</span>
                       </h2>
-                      <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
-                        Learning is like building with blocks. We start at the bottom and work our way up until you have a big, beautiful tower of knowledge! 🧱
+                      <p className="font-sans text-base md:text-lg text-slate-500 leading-relaxed">
+                        Learning is incremental. We map new concepts onto existing foundations until you possess a robust tower of wisdom.
                       </p>
                     </div>
                   )}
 
-                  <div className="pt-6 md:pt-12 flex flex-col md:flex-row gap-6 md:gap-8 items-center mt-auto">
+                  <div className="pt-6 flex flex-col sm:flex-row gap-3 items-center mt-auto">
                     {onboardingStep < 3 ? (
                       <button
                         onClick={() => setOnboardingStep(onboardingStep + 1)}
-                        className="w-full md:flex-1 py-6 md:py-10 rounded-[1.5rem] md:rounded-[2.5rem] font-sans text-xl md:text-2xl font-black uppercase tracking-[0.2em] bg-slate-900 text-white hover:bg-accent transition-all shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-accent/40 hover:-translate-y-2 ring-8 ring-slate-900/5 hover:ring-accent/10"
+                        className="w-full sm:flex-1 py-4 rounded-xl font-sans text-sm font-bold uppercase tracking-[0.1em] bg-slate-900 text-white hover:bg-accent transition-all shadow-lg hover:-translate-y-0.5"
                       >
-                        Keep going! →
+                        Continue →
                       </button>
                     ) : (
                       <button
@@ -1961,17 +1959,17 @@ function UnderstandableEngine() {
                           setShowOnboarding(false);
                           localStorage.setItem("understandable-onboarded", "true");
                         }}
-                        className="w-full py-6 md:py-10 rounded-[1.5rem] md:rounded-[2.5rem] font-sans text-xl md:text-2xl font-black uppercase tracking-[0.2em] bg-accent text-white hover:bg-slate-900 transition-all shadow-[0_20px_50px_rgba(166,139,106,0.3)] hover:-translate-y-2 ring-8 ring-accent/10 hover:ring-slate-900/5"
+                        className="w-full py-4 rounded-xl font-sans text-sm font-bold uppercase tracking-[0.1em] bg-accent text-white hover:bg-slate-900 transition-all shadow-lg hover:-translate-y-0.5"
                       >
-                        Let's Explore! →
+                        Start Exploring →
                       </button>
                     )}
                     {onboardingStep > 0 && (
                       <button
                         onClick={() => setOnboardingStep(onboardingStep - 1)}
-                        className="font-sans text-base font-black uppercase tracking-widest opacity-30 hover:opacity-100 transition-opacity p-6"
+                        className="font-sans text-[10px] font-bold uppercase tracking-widest opacity-30 hover:opacity-100 transition-opacity p-4"
                       >
-                        ← Wait, go back
+                        ← Back
                       </button>
                     )}
                   </div>
@@ -2052,11 +2050,11 @@ function UnderstandableEngine() {
                           initial={{ opacity: 0, y: 20, scale: 0.98 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 20, scale: 0.98 }}
-                          className="absolute right-0 top-16 md:top-20 w-[calc(100vw-32px)] sm:w-80 z-50 p-6 md:p-8 border-4 border-border shadow-[24px_24px_0_0_rgba(0,0,0,0.05)] bg-surface text-ink rounded-[2rem] overflow-hidden"
+                          className="absolute right-0 top-16 md:top-20 w-[calc(100vw-32px)] sm:w-80 z-50 p-6 md:p-8 border border-border shadow-2xl bg-surface text-ink rounded-2xl overflow-hidden"
                         >
                           <div className="flex flex-col gap-8">
-                            <div className="flex flex-col gap-4 border-b-2 border-border pb-8">
-                              <div className="w-12 h-12 rounded-full border-2 border-accent p-1 mb-2">
+                            <div className="flex flex-col gap-4 border-b border-border pb-8">
+                              <div className="w-12 h-12 rounded-full border border-accent p-0.5 mb-2">
                                 {user.photoURL ? (
                                   <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" referrerPolicy="no-referrer" />
                                 ) : (
@@ -2064,8 +2062,8 @@ function UnderstandableEngine() {
                                 )}
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-xl font-display font-black uppercase tracking-widest leading-none">{user.displayName?.split(' ')[0]}</span>
-                                <span className="text-[10px] font-mono opacity-50 break-all mt-1">{user.email}</span>
+                                <span className="text-xl font-display font-medium tracking-tight leading-none">{user.displayName?.split(' ')[0]}</span>
+                                <span className="text-[10px] font-mono opacity-40 break-all mt-1">{user.email}</span>
                               </div>
                             </div>
 
@@ -2157,7 +2155,7 @@ function UnderstandableEngine() {
                 <Tooltip text="Sign in to your account">
                   <button 
                     onClick={handleLogin}
-                    className="font-mono text-sm md:text-xl tracking-[0.1em] md:tracking-[0.2em] uppercase transition-all font-black border-2 border-ink px-6 py-3 md:px-12 md:py-6 hover:bg-ink hover:text-bg text-ink rounded-xl md:rounded-2xl shadow-[4px_4px_0_0_rgba(0,0,0,0.05)] md:shadow-[8px_8px_0_0_rgba(0,0,0,0.05)]"
+                    className="font-mono text-xs md:text-sm tracking-[0.2em] uppercase transition-all font-bold border border-ink/20 px-6 py-3 md:px-8 md:py-4 hover:bg-ink hover:text-bg text-ink rounded-lg shadow-sm"
                   >
                     SIGN IN
                   </button>
@@ -2186,7 +2184,7 @@ function UnderstandableEngine() {
                     Understand Anything. Instantly.
                   </span>
                   
-                  <div className="relative p-6 md:p-10 border-2 md:border-4 transition-all duration-500 bg-surface border-border shadow-[12px_12px_0_0_rgba(0,0,0,0.03)] rounded-3xl">
+                  <div className="relative p-6 md:p-10 border transition-all duration-500 bg-surface border-border shadow-sm rounded-2xl focus-within:border-accent/40 focus-within:shadow-md">
                     <textarea
                       ref={inputRef}
                       value={concept}
@@ -2207,7 +2205,7 @@ function UnderstandableEngine() {
                       onKeyDown={handleKey}
                       placeholder="Type any topic you want to understand..."
                       rows={1}
-                      className={`w-full bg-transparent border-none outline-none resize-none transition-all duration-700 break-words placeholder:opacity-60 text-xl md:text-3xl lg:text-4xl font-display font-black text-ink tracking-tighter leading-none
+                      className={`w-full bg-transparent border-none outline-none resize-none transition-all duration-700 break-words placeholder:opacity-30 text-xl md:text-3xl lg:text-4xl font-display font-medium text-ink tracking-tight leading-none
                         ${conceptError ? "text-red-500" : ""}
                       `}
                     />
@@ -2245,9 +2243,7 @@ function UnderstandableEngine() {
                         understandTopic();
                       }}
                       disabled={concept.length === 0 || !!conceptError || loading}
-                      className={`w-full group flex items-center justify-center gap-6 px-8 py-5 md:px-12 md:py-8 font-mono text-sm md:text-lg uppercase tracking-[0.2em] font-black transition-all border-4 shadow-[8px_8px_0_0_rgba(255,255,255,0.1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_0_rgba(255,255,255,0.15)] active:translate-x-0 active:translate-y-0 active:shadow-[4px_4px_0_0_rgba(255,255,255,0.1)]
-                        ${(concept.length === 0 || !!conceptError || loading) ? "opacity-30 cursor-not-allowed" : "opacity-100"}
-                        bg-black border-white/20 text-white hover:bg-white hover:text-black
+                      className={`w-full group flex items-center justify-center gap-6 px-8 py-5 md:px-12 md:py-8 font-mono text-xs md:text-sm uppercase tracking-[0.2em] font-bold transition-all border shadow-sm hover:shadow-lg disabled:opacity-30 disabled:cursor-not-allowed bg-slate-900 border-white/10 text-white hover:bg-accent rounded-xl
                       `}
                     >
                       {loading ? "Synthesizing..." : "Understand it!"}
@@ -2285,15 +2281,15 @@ function UnderstandableEngine() {
                           <button
                             key={`concept-sug-item-${i}-${s.concept?.replace(/\s+/g, '_')}-${s.isVault ? 'v' : 'r'}`}
                             onClick={() => understandTopic(s.concept)}
-                            className={`text-left p-6 border-2 transition-all group/sug aspect-square flex flex-col justify-between shadow-[6px_6px_0_0_rgba(0,0,0,0.1)] hover:shadow-[10px_10px_0_0_rgba(0,0,0,0.15)] hover:translate-y-[-2px]
-                              ${colorClass} ${rotationClass} font-sans text-[10px] md:text-sm uppercase font-black tracking-widest overflow-hidden
+                            className={`text-left p-6 border transition-all group/sug aspect-square flex flex-col justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 rounded-xl
+                              ${colorClass} font-sans text-[10px] md:text-xs uppercase font-bold tracking-widest overflow-hidden
                             `}
                           >
                             <div className="flex justify-between items-start mb-2">
-                              <div className="w-4 h-1 bg-black/10" />
-                              {s.isVault && <span className="text-[8px] opacity-40 font-mono tracking-tighter">CONFIRMED</span>}
+                              <div className="w-4 h-0.5 bg-black/10" />
+                              {s.isVault && <span className="text-[7px] opacity-20 font-mono">VERIFIED</span>}
                             </div>
-                            <span className="line-clamp-4 leading-tight">{s.concept}</span>
+                            <span className="line-clamp-4 leading-tight opacity-70 group-hover/sug:opacity-100">{s.concept}</span>
                           </button>
                         );
                       })}
@@ -2376,6 +2372,7 @@ function UnderstandableEngine() {
                   <AnimatePresence mode="popLayout" custom={direction} initial={false}>
                     {isRefining && (
                       <motion.div 
+                        key="refining-axiom-loader"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -2419,7 +2416,7 @@ function UnderstandableEngine() {
                           <StateStamp label={result.axis1?.labelA || "The Abundance"} type="success" />
                           <UnderstandableVoice text={result.axis1?.stateA || result.stateA} />
                         </div>
-                        <p className="text-2xl md:text-6xl font-sans leading-tight md:leading-[1.3] text-pretty font-bold transition-all text-ink">
+                        <p className="text-2xl md:text-5xl font-sans leading-tight md:leading-[1.3] text-pretty transition-all text-ink">
                           {result.axis1?.stateA || result.stateA}
                         </p>
                         <ELI9Card content={result.axis1?.stateA_eli9} />
@@ -2440,7 +2437,7 @@ function UnderstandableEngine() {
                           <StateStamp label={result.axis1?.labelB || "The Scarcity"} type="struggle" />
                           <UnderstandableVoice text={result.axis1?.stateB || result.stateB} />
                         </div>
-                        <p className="text-2xl md:text-6xl font-sans leading-tight md:leading-[1.3] text-pretty font-bold transition-all text-ink">
+                        <p className="text-2xl md:text-5xl font-sans leading-tight md:leading-[1.3] text-pretty transition-all text-ink">
                           {result.axis1?.stateB || result.stateB}
                         </p>
                         <ELI9Card content={result.axis1?.stateB_eli9} />
@@ -2455,13 +2452,13 @@ function UnderstandableEngine() {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="p-6 md:p-12 lg:p-20 border-2 md:border-4 border-accent/20 bg-accent/5 rounded-[2rem] md:rounded-[3rem] space-y-6 md:space-y-12 w-full h-full flex flex-col justify-start md:justify-center overflow-y-auto no-scrollbar py-8"
+                        className="p-6 md:p-16 lg:p-24 border border-accent/20 bg-accent/[0.02] rounded-3xl space-y-6 md:space-y-12 w-full h-full flex flex-col justify-start md:justify-center overflow-y-auto no-scrollbar py-8"
                       >
                         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6">
                           <SectionLabel>The Hidden Mechanism</SectionLabel>
                           <UnderstandableVoice text={result.axis2?.mechanism} />
                         </div>
-                        <p className="text-2xl md:text-6xl font-display font-bold leading-tight tracking-tight text-ink">
+                        <p className="text-2xl md:text-5xl font-display font-medium tracking-tight leading-tight text-ink">
                           {result.axis2?.mechanism}
                         </p>
                         <ELI9Card content={result.axis2?.mechanism_eli9} />
@@ -2482,7 +2479,7 @@ function UnderstandableEngine() {
                           <SectionLabel>The Zenith</SectionLabel>
                           <UnderstandableVoice text={result.axis3?.zenith || result.zenith} />
                         </div>
-                        <p className="text-3xl md:text-8xl font-display font-black text-ink tracking-tighter leading-tight">
+                        <p className="text-4xl md:text-7xl font-display font-medium text-ink tracking-tight leading-none text-balance">
                           "{result.axis3?.zenith || result.zenith}"
                         </p>
                         <ELI9Card content={result.axis3?.zenith_eli9} />
@@ -2500,30 +2497,30 @@ function UnderstandableEngine() {
                         className="text-center space-y-8 md:space-y-12 py-6 md:py-20 w-full h-full flex flex-col justify-start md:justify-center overflow-y-auto no-scrollbar px-1"
                       >
                         <div className="h-1.5 w-16 md:w-24 bg-accent mx-auto rounded-full" />
-                        <h3 className="text-3xl md:text-7xl font-display font-black uppercase text-ink tracking-tighter">Clarity Gained?</h3>
-                        <p className="text-lg md:text-4xl font-serif italic text-ink/60 max-w-2xl mx-auto leading-tight">
+                        <h3 className="text-3xl md:text-6xl font-display font-medium tracking-tight text-ink">Clarity Gained?</h3>
+                        <p className="text-lg md:text-3xl font-sans opacity-40 max-w-2xl mx-auto leading-relaxed">
                           Does this concept now sit beautifully in your mind?
                         </p>
                         
                         <div className="flex flex-col md:flex-row gap-4 md:gap-6 justify-center mt-6 md:mt-12">
                            <button 
                              onClick={cyclePerspective}
-                             className="px-6 py-4 md:px-12 md:py-8 rounded-2xl md:rounded-3xl border-2 md:border-4 border-accent text-accent font-mono text-sm md:text-lg uppercase tracking-widest font-black hover:bg-accent hover:text-bg transition-all flex items-center justify-center gap-3 md:gap-4 group"
+                             className="px-6 py-4 md:px-12 md:py-6 rounded-2xl border border-accent/30 text-accent font-mono text-xs md:text-sm uppercase tracking-widest font-bold hover:bg-accent hover:text-bg transition-all flex items-center justify-center gap-3 md:gap-4 group"
                            >
-                              <RotateCcw className={`w-5 h-5 md:w-6 md:h-6 transition-transform group-hover:rotate-[-180deg] ${isRefining ? "animate-spin" : ""}`} />
+                              <RotateCcw className={`w-5 h-5 md:w-5 md:h-5 transition-transform group-hover:rotate-[-180deg] ${isRefining ? "animate-spin" : ""}`} />
                               Shift Lens
                            </button>
                            <button 
                              onClick={lockInTruth}
                              disabled={saving || saveSuccess}
-                             className="px-6 py-4 md:px-12 md:py-10 bg-accent border-2 md:border-4 border-accent text-bg rounded-2xl md:rounded-4xl flex items-center justify-between gap-6 md:gap-12 group hover:bg-bg hover:text-accent transition-all active:scale-95"
+                             className="px-6 py-4 md:px-12 md:py-8 bg-black text-white hover:bg-accent rounded-2xl flex items-center justify-between gap-8 md:gap-16 group transition-all active:scale-95 shadow-lg"
                            >
                               <AhaSparkle active={showSparkle} status={affirmationStatus} concept={concept} />
                               <div className="flex flex-col items-start text-left">
-                                <span className="font-mono text-[8px] md:text-[10px] uppercase tracking-[0.4em] font-black opacity-40 italic">Final Step</span>
-                                <span className="font-display text-lg md:text-4xl font-black uppercase">Understand!</span>
+                                <span className="font-mono text-[9px] uppercase tracking-[0.2em] font-bold opacity-30 italic">Synthesis Complete</span>
+                                <span className="font-display text-lg md:text-3xl font-medium">Understand</span>
                               </div>
-                              <ArrowRight className="w-6 h-6 md:w-10 md:h-10 border-2 rounded-full p-0.5 md:p-1" strokeWidth={3} />
+                              <ArrowRight className="w-5 h-5 md:w-6 md:h-6 opacity-40 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
                            </button>
                         </div>
                       </motion.div>
@@ -2534,50 +2531,50 @@ function UnderstandableEngine() {
                         key="step6"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center space-y-16 py-24"
+                        className="text-center space-y-10 md:space-y-16 py-10 md:py-24"
                       >
                          <div className="flex flex-col items-center">
-                            <div className="w-32 h-32 bg-accent/10 rounded-full flex items-center justify-center mb-10 border-4 border-accent/20 animate-bounce">
-                               <CheckCircle2 className="w-16 h-16 text-accent" />
+                            <div className="w-20 h-20 md:w-24 md:h-24 bg-accent/5 rounded-full flex items-center justify-center mb-6 md:mb-10 border border-accent/20 animate-pulse">
+                               <CheckCircle2 className="w-10 h-10 md:w-12 md:h-12 text-accent" />
                             </div>
-                            <h3 className="text-5xl md:text-8xl font-display font-black uppercase text-ink tracking-tighter mb-6">Integration Complete</h3>
-                            <p className="text-2xl md:text-4xl font-serif italic text-ink/60 max-w-3xl mx-auto leading-tight">
-                              This concept has been successfully synthesized and woven into the global tapestry of understanding.
+                            <h3 className="text-3xl md:text-6xl font-display font-medium tracking-tight text-ink mb-3 md:mb-4">Integration Complete</h3>
+                            <p className="text-base md:text-2xl font-sans opacity-40 max-w-xl mx-auto leading-relaxed px-4">
+                              This concept has been successfully synthesized and woven into your global tapestry of understanding.
                             </p>
                          </div>
 
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto px-4 md:px-0">
                             <button 
                               onClick={() => { setConcept(""); setResult(null); setAxiomStep(0); }}
-                              className="group p-10 bg-bg border-4 border-current/5 hover:border-accent rounded-[2.5rem] transition-all hover:-translate-y-2 text-left"
+                              className="group p-6 md:p-8 bg-surface border border-border hover:border-accent rounded-2xl transition-all hover:shadow-lg text-left"
                             >
-                               <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
-                                 <Plus className="w-6 h-6" />
+                               <div className="w-8 h-8 md:w-10 md:h-10 bg-accent/5 rounded-xl flex items-center justify-center mb-4 md:mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
+                                 <Plus className="w-4 h-4 md:w-5 md:h-5" />
                                </div>
-                               <h4 className="text-2xl font-black uppercase tracking-tight mb-2">Next Concept</h4>
-                               <p className="text-sm opacity-50 font-sans italic">Clear your mind and explore a fresh new idea.</p>
+                               <h4 className="text-base md:text-lg font-medium tracking-tight mb-1 md:mb-2">Next Inquiry</h4>
+                               <p className="text-[10px] md:text-xs opacity-40 font-sans italic">Synthesize a new perspective.</p>
                             </button>
 
                             <button 
                               onClick={() => { setShowIndex(true); setConcept(""); setResult(null); setAxiomStep(0); }}
-                              className="group p-10 bg-bg border-4 border-current/5 hover:border-accent rounded-[2.5rem] transition-all hover:-translate-y-2 text-left"
+                              className="group p-6 md:p-8 bg-surface border border-border hover:border-accent rounded-2xl transition-all hover:shadow-lg text-left"
                             >
-                               <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
-                                 <LayoutDashboard className="w-6 h-6" />
+                               <div className="w-8 h-8 md:w-10 md:h-10 bg-accent/5 rounded-xl flex items-center justify-center mb-4 md:mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
+                                 <LayoutDashboard className="w-4 h-4 md:w-5 md:h-5" />
                                </div>
-                               <h4 className="text-2xl font-black uppercase tracking-tight mb-2">Visit Vault</h4>
-                               <p className="text-sm opacity-50 font-sans italic">See how this truth fits among the other established records.</p>
+                               <h4 className="text-base md:text-lg font-medium tracking-tight mb-1 md:mb-2">Private Vault</h4>
+                               <p className="text-[10px] md:text-xs opacity-40 font-sans italic">View your Established Cognitive Records.</p>
                             </button>
 
                             <button 
                               onClick={() => { setShowDiscovery(true); setConcept(""); setResult(null); setAxiomStep(0); }}
-                              className="group p-10 bg-bg border-4 border-current/5 hover:border-accent rounded-[2.5rem] transition-all hover:-translate-y-2 text-left"
+                              className="group p-6 md:p-8 bg-surface border border-border hover:border-accent rounded-2xl transition-all hover:shadow-lg text-left"
                             >
-                               <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
-                                 <Globe className="w-6 h-6" />
+                               <div className="w-8 h-8 md:w-10 md:h-10 bg-accent/5 rounded-xl flex items-center justify-center mb-4 md:mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
+                                 <Globe className="w-4 h-4 md:w-5 md:h-5" />
                                </div>
-                               <h4 className="text-2xl font-black uppercase tracking-tight mb-2">Discovery Hub</h4>
-                               <p className="text-sm opacity-50 font-sans italic">Enter the collective brain and see what's trending now.</p>
+                               <h4 className="text-base md:text-lg font-medium tracking-tight mb-1 md:mb-2">Global Index</h4>
+                               <p className="text-[10px] md:text-xs opacity-40 font-sans italic">Explore Established Community Nodes.</p>
                             </button>
                          </div>
                       </motion.div>
@@ -2587,14 +2584,14 @@ function UnderstandableEngine() {
 
                 {/* AXIOM CONTROLS */}
                 {axiomStep < 5 && (
-                  <div className="shrink-0 mt-6 md:mt-12 flex gap-3 md:gap-4 h-16 md:h-32 mb-4">
+                  <div className="shrink-0 mt-4 md:mt-12 flex gap-3 md:gap-4 h-14 md:h-32 mb-4">
                     {axiomStep > 0 && (
                       <button 
                         onClick={() => setViewStep(axiomStep - 1)}
-                        className="flex-1 bg-ink/5 border-2 md:border-4 border-ink/20 text-ink rounded-xl md:rounded-3xl flex flex-col items-center justify-center hover:bg-ink hover:text-white transition-all group"
+                        className="flex-1 bg-surface border border-border text-ink rounded-2xl flex flex-col items-center justify-center hover:bg-accent/5 transition-all group"
                       >
-                        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-mono text-[8px] md:text-[10px] uppercase tracking-widest font-black">Back</span>
+                        <ChevronLeft className="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:-translate-x-1 transition-all" />
+                        <span className="font-mono text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-30">Back</span>
                       </button>
                     )}
                     <button 
@@ -2603,13 +2600,13 @@ function UnderstandableEngine() {
                         await recordStepProgress(axiomStep);
                         setViewStep(axiomStep + 1);
                       }}
-                      className="flex-[3] bg-accent border-2 md:border-4 border-accent text-bg rounded-xl md:rounded-3xl flex items-center justify-between px-6 md:px-16 hover:bg-bg hover:text-accent transition-all group active:scale-95 relative overflow-hidden"
+                      className="flex-[3] bg-black text-white hover:bg-accent border border-white/10 rounded-2xl flex items-center justify-between px-6 md:px-16 transition-all group active:scale-95 relative overflow-hidden shadow-lg"
                     >
-                      <div className="flex flex-col items-start">
-                        <span className="font-mono text-[8px] md:text-[10px] uppercase tracking-widest font-black opacity-60">I Understand</span>
-                        <span className="font-display text-lg md:text-3xl font-black uppercase">Proceed</span>
+                      <div className="flex flex-col items-start leading-none gap-0.5 md:gap-1">
+                        <span className="font-mono text-[8px] md:text-[9px] uppercase tracking-[0.2em] font-bold opacity-30 italic">Step {axiomStep + 1}</span>
+                        <span className="font-display text-base md:text-2xl font-medium">Continue</span>
                       </div>
-                      <ArrowRight className="w-6 h-6 md:w-12 md:h-12 group-hover:translate-x-2 md:translate-x-4 transition-transform" strokeWidth={4} />
+                      <ArrowRight className="w-4 h-4 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform opacity-40 group-hover:opacity-100" />
                     </button>
                   </div>
                 )}
@@ -2632,28 +2629,28 @@ function UnderstandableEngine() {
               <div className="max-w-7xl mx-auto w-full flex flex-col h-full">
                 <div className="mb-12 flex flex-col gap-8 border-b-4 border-current pb-12">
                    <div className="flex flex-col md:flex-row items-center justify-between gap-8 text-ink">
-                      <h2 className="text-4xl md:text-6xl font-display font-black uppercase tracking-tighter">The Vault</h2>
-                      <button onClick={() => setShowIndex(false)} className="w-full md:w-auto font-mono text-[10px] md:text-sm uppercase tracking-widest font-black border-2 border-ink px-8 py-4 hover:bg-ink hover:text-bg transition-all rounded-xl">← Back</button>
+                      <h2 className="text-4xl md:text-5xl font-display font-medium tracking-tight">The Vault</h2>
+                      <button onClick={() => setShowIndex(false)} className="w-full md:w-auto font-mono text-[10px] md:text-xs uppercase tracking-widest font-bold border border-ink/20 px-6 py-3 hover:bg-ink hover:text-bg transition-all rounded-xl">← Back</button>
                    </div>
                    <div className="flex flex-col md:flex-row gap-6">
                      <div className="flex-1 relative">
-                       <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 opacity-40" />
+                       <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
                        <input 
                          type="text" 
                          placeholder="Search Vault..." 
                          value={indexSearch} 
                          onChange={(e) => setIndexSearch(e.target.value)} 
-                         className="w-full bg-current/5 border-2 border-current/10 rounded-2xl py-5 pl-16 pr-6 font-mono text-sm uppercase tracking-widest font-black outline-none focus:border-accent transition-colors text-ink" 
+                         className="w-full bg-surface border border-border shadow-sm rounded-2xl py-4 pl-14 pr-6 font-mono text-xs uppercase tracking-widest outline-none focus:border-accent transition-colors text-ink" 
                        />
                      </div>
-                     <div className="flex bg-current/5 border-2 border-current/10 rounded-2xl p-2 w-full md:w-auto shrink-0">
+                     <div className="flex bg-current/5 border border-border rounded-2xl p-1.5 w-full md:w-auto shrink-0">
                         <button 
                           onClick={() => setIndexType("personal")} 
-                          className={`flex-1 md:w-40 py-3 font-mono text-sm uppercase tracking-widest font-black transition-all rounded-xl ${indexType === "personal" ? "bg-bg shadow-sm text-ink" : "text-ink/40 hover:text-ink/80"}`}
+                          className={`flex-1 md:w-32 py-2.5 font-mono text-[10px] uppercase tracking-widest font-bold transition-all rounded-xl ${indexType === "personal" ? "bg-bg shadow-sm text-ink" : "text-ink/40 hover:text-ink/80"}`}
                         >Personal</button>
                         <button 
                           onClick={() => setIndexType("global")} 
-                          className={`flex-1 md:w-40 py-3 font-mono text-sm uppercase tracking-widest font-black transition-all rounded-xl ${indexType === "global" ? "bg-bg shadow-sm text-ink" : "text-ink/40 hover:text-ink/80"}`}
+                          className={`flex-1 md:w-32 py-2.5 font-mono text-[10px] uppercase tracking-widest font-bold transition-all rounded-xl ${indexType === "global" ? "bg-bg shadow-sm text-ink" : "text-ink/40 hover:text-ink/80"}`}
                         >Global</button>
                      </div>
                    </div>
@@ -2740,16 +2737,18 @@ function UnderstandableEngine() {
       <AnimatePresence>
         {reportingConcept && (
           <motion.div 
+            key="reporting-concept-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-xl flex items-center justify-center p-6"
           >
              <motion.div 
-               initial={{ scale: 0.9, y: 20 }}
-               animate={{ scale: 1, y: 0 }}
-               className="w-full max-w-lg bg-bg border-4 border-soft-red/20 shadow-2xl rounded-[2.5rem] p-10 md:p-14 text-center"
-             >
+                               key="report-concept-modal-inner"
+                               initial={{ scale: 0.9, y: 20 }}
+                               animate={{ scale: 1, y: 0 }}
+                               className="w-full max-w-lg bg-bg border-4 border-soft-red/20 shadow-2xl rounded-[2.5rem] p-10 md:p-14 text-center"
+                             >
                 <div className="w-16 h-16 bg-soft-red/5 rounded-full flex items-center justify-center mx-auto mb-8">
                   <AlertTriangle className="w-8 h-8 text-soft-red" />
                 </div>
@@ -2796,20 +2795,20 @@ function UnderstandableEngine() {
           >
             <div className="flex justify-between items-center mb-10 md:mb-16">
               <div className="flex items-center gap-6">
-                <div className="w-12 h-12 bg-accent text-bg rounded-2xl flex items-center justify-center shadow-[6px_6px_0_0_rgba(0,0,0,0.1)]">
-                  <Globe className="w-6 h-6" />
+                <div className="w-12 h-12 bg-accent/5 text-accent rounded-xl flex items-center justify-center shadow-sm">
+                  <Globe className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-2">Discovery Hub</h2>
-                  <p className="font-mono text-[10px] md:text-xs uppercase tracking-[0.3em] font-black opacity-30 whitespace-nowrap">Real-time Collective Consciousness</p>
+                   <h2 className="text-4xl md:text-5xl font-display font-medium tracking-tight leading-none mb-1">Global Index</h2>
+                  <p className="font-mono text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-bold opacity-30 whitespace-nowrap font-mono">Real-time Collective Awareness</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setShowDiscovery(false)}
-                  className="w-14 h-14 bg-current/5 rounded-2xl flex items-center justify-center hover:bg-current/10 transition-colors border-2 border-current/10"
+                  className="w-12 h-12 bg-surface text-ink/40 rounded-xl flex items-center justify-center hover:text-ink transition-colors border border-border shadow-sm"
                 >
-                  <Plus className="w-6 h-6 rotate-45" />
+                  <Plus className="w-5 h-5 rotate-45" />
                 </button>
               </div>
             </div>
@@ -2851,7 +2850,7 @@ function UnderstandableEngine() {
                             return dateB - dateA;
                         }).slice(0, 5).map((ax, i) => (
                           <button
-                            key={`discovery-recent-${i}-${ax.id || ax.concept.replace(/\s+/g, '_')}`}
+                            key={`discovery-recent-${ax.id || ax.concept || 'none'}`}
                             onClick={() => {
                               setResult(ax.payload || ax);
                               setConcept(ax.concept);
@@ -2962,6 +2961,7 @@ function UnderstandableEngine() {
         <AnimatePresence>
           {showLibrary && (
             <Library 
+              key="library-modal-component"
               onClose={() => setShowLibrary(false)}
               onSelectItem={(item, card) => {
                 setShowLibrary(false);

@@ -17,7 +17,7 @@ export const IndexCard: React.FC<IndexCardProps> = ({ item, card, isOpen, onClos
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-8">
+        <div key="index-card-modal-root" className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-8">
           {/* Overlay */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -32,50 +32,50 @@ export const IndexCard: React.FC<IndexCardProps> = ({ item, card, isOpen, onClos
             initial={{ opacity: 0, scale: 0.9, y: 40 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 40 }}
-            className="relative w-full max-w-4xl max-h-[90vh] bg-bg border-[6px] border-ink rounded-[4rem] shadow-[24px_24px_0_0_rgba(0,0,0,0.2)] overflow-hidden flex flex-col"
+            className="relative w-full max-w-4xl max-h-[90vh] bg-bg border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="px-12 py-10 border-b-4 border-ink flex justify-between items-start bg-accent/5">
-              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 bg-accent text-bg rounded-2xl flex items-center justify-center">
-                  <BookOpen size={32} />
+            <div className="px-8 py-8 border-b border-border flex justify-between items-start bg-accent/[0.02]">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-accent text-bg rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                  <BookOpen size={28} />
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="text-4xl font-display font-black uppercase tracking-tighter leading-tight">{item.title}</h3>
-                  <p className="font-mono text-xs uppercase tracking-widest opacity-40">{item.shortDescription}</p>
+                  <h3 className="text-3xl font-display font-medium tracking-tight leading-tight">{item.title}</h3>
+                  <p className="font-mono text-[10px] uppercase tracking-widest opacity-40 mt-1">{item.shortDescription}</p>
                 </div>
               </div>
               <button 
                 onClick={onClose}
-                className="p-3 hover:bg-ink/5 rounded-full transition-all"
+                className="p-2 hover:bg-ink/5 rounded-full transition-all opacity-40 hover:opacity-100"
               >
-                <X size={32} />
+                <X size={24} />
               </button>
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-              <div className="max-w-2xl mx-auto space-y-16">
+            <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
+              <div className="max-w-2xl mx-auto space-y-12">
                 
                 {/* 1. Explanation */}
                 <section>
-                  <label className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] font-black mb-6 opacity-40">
-                    <Lightbulb size={14} className="text-accent" />
-                    Plain-English Synthesis
+                  <label className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.3em] font-medium mb-5 opacity-40">
+                    <Lightbulb size={12} className="text-accent" />
+                    Cognitive Synthesis
                   </label>
-                  <p className="text-2xl font-sans leading-relaxed text-ink/80">
+                  <p className="text-xl md:text-2xl font-sans leading-relaxed text-ink/90 font-medium">
                     {card.explanation}
                   </p>
                 </section>
 
                 {/* Impact / Why it Matters */}
                 {card.whyItMatters && (
-                  <section className="p-8 bg-accent/[0.03] border-l-8 border-accent rounded-3xl">
-                    <label className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] font-black mb-4 opacity-40">
-                      <Zap size={14} className="text-accent" />
-                      The "Why" Analysis
+                  <section className="p-8 bg-accent/[0.03] border border-accent/10 rounded-2xl">
+                    <label className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.3em] font-medium mb-4 opacity-40">
+                      <Zap size={12} className="text-accent" />
+                      Strategic Value
                     </label>
-                    <p className="text-xl font-sans font-medium leading-relaxed italic text-ink/70">
+                    <p className="text-lg font-sans font-medium leading-relaxed italic text-ink/70">
                       {card.whyItMatters}
                     </p>
                   </section>
@@ -83,17 +83,17 @@ export const IndexCard: React.FC<IndexCardProps> = ({ item, card, isOpen, onClos
 
                 {/* 2. Examples */}
                 <section>
-                  <label className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] font-black mb-6 opacity-40">
-                    <PlayCircle size={14} className="text-accent" />
-                    Real-World Transmutations
+                  <label className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.3em] font-medium mb-5 opacity-40">
+                    <PlayCircle size={12} className="text-accent" />
+                    Contextual Applications
                   </label>
-                  <ul className="space-y-4">
+                  <ul className="space-y-3">
                     {card.examples.map((example, i) => (
-                      <li key={i} className="flex items-start gap-4 p-6 bg-surface border-2 border-border rounded-2xl">
-                        <div className="w-6 h-6 bg-accent/10 text-accent rounded-lg flex items-center justify-center shrink-0 font-mono text-[10px] font-black">
+                      <li key={`ex-${item.id}-${i}`} className="flex items-start gap-4 p-5 bg-surface border border-border rounded-xl">
+                        <div className="w-5 h-5 bg-accent/10 text-accent rounded flex items-center justify-center shrink-0 font-mono text-[9px] font-bold mt-1">
                           {i + 1}
                         </div>
-                        <span className="text-lg font-medium opacity-80">{example}</span>
+                        <span className="text-base font-medium opacity-80">{example}</span>
                       </li>
                     ))}
                   </ul>
@@ -102,20 +102,20 @@ export const IndexCard: React.FC<IndexCardProps> = ({ item, card, isOpen, onClos
                 {/* 3. Walkthrough */}
                 {card.walkthrough && card.walkthrough.length > 0 && (
                   <section>
-                    <label className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] font-black mb-6 opacity-40">
-                      <ArrowRight size={14} className="text-accent" />
-                      Neural Walkthrough
+                    <label className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.3em] font-medium mb-6 opacity-40">
+                      <ArrowRight size={12} className="text-accent" />
+                      Implementation Path
                     </label>
                     <div className="space-y-6">
                       {card.walkthrough.map((step, i) => (
-                        <div key={i} className="relative pl-12">
+                        <div key={`walk-${item.id}-${i}`} className="relative pl-10">
                           {i < card.walkthrough!.length - 1 && (
-                            <div className="absolute left-[19px] top-8 bottom-[-24px] w-1 bg-ink/10" />
+                            <div className="absolute left-[15px] top-6 bottom-[-24px] w-[1px] bg-border" />
                           )}
-                          <div className="absolute left-0 top-0 w-10 h-10 bg-accent text-bg rounded-full flex items-center justify-center font-mono text-xs font-black z-10">
+                          <div className="absolute left-0 top-0 w-8 h-8 bg-accent/5 text-accent border border-accent/20 rounded-full flex items-center justify-center font-mono text-[10px] font-bold z-10">
                             {i + 1}
                           </div>
-                          <p className="text-xl font-bold opacity-70 pt-1 leading-relaxed">{step}</p>
+                          <p className="text-lg font-medium opacity-70 pt-1 leading-relaxed">{step}</p>
                         </div>
                       ))}
                     </div>
@@ -124,14 +124,14 @@ export const IndexCard: React.FC<IndexCardProps> = ({ item, card, isOpen, onClos
 
                 {/* 4. Related Concepts */}
                 {card.relatedItems && card.relatedItems.length > 0 && (
-                  <section className="pt-8 border-t-4 border-ink/5">
-                    <label className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] font-black mb-6 opacity-40">
-                      <Layers size={14} className="text-accent" />
-                      Related Cognitive Nodes
+                  <section className="pt-8 border-t border-border">
+                    <label className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.3em] font-medium mb-5 opacity-40">
+                      <Layers size={12} className="text-accent" />
+                      Adjacent Nodes
                     </label>
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-wrap gap-2">
                       {card.relatedItems.map((rel, i) => (
-                        <span key={i} className="px-6 py-3 bg-surface border-2 border-border rounded-full font-mono text-[10px] uppercase tracking-widest font-black opacity-60">
+                        <span key={`rel-${item.id}-${i}`} className="px-4 py-2 bg-surface border border-border rounded-lg font-mono text-[9px] uppercase tracking-wider font-semibold opacity-60">
                           {rel}
                         </span>
                       ))}
@@ -142,16 +142,16 @@ export const IndexCard: React.FC<IndexCardProps> = ({ item, card, isOpen, onClos
             </div>
 
             {/* Sticky Footer for Feedback */}
-            <div className="px-12 py-8 bg-surface border-t-4 border-ink flex justify-between items-center shrink-0">
-              <p className="font-mono text-[10px] uppercase tracking-widest opacity-40">
-                Cognitive Node ID: <span className="text-ink font-black">{item.id}</span>
+            <div className="px-8 py-5 bg-surface border-t border-border flex justify-between items-center shrink-0">
+              <p className="font-mono text-[9px] uppercase tracking-widest opacity-30">
+                Ref: <span className="text-ink font-medium">{item.id}</span>
               </p>
               <button 
                 onClick={showFeedback}
-                className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest font-black text-accent hover:opacity-100 transition-all px-6 py-3 hover:bg-accent/5 rounded-xl border border-accent/20"
+                className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest font-bold text-accent/60 hover:text-accent transition-all px-4 py-2 hover:bg-accent/5 rounded-lg border border-accent/10"
               >
-                <MessageSquare size={16} />
-                Report Friction
+                <MessageSquare size={14} />
+                Feedback
               </button>
             </div>
           </motion.div>
