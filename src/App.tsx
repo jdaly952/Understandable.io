@@ -857,6 +857,12 @@ function UnderstandableEngine() {
   const [affirmationStatus, setAffirmationStatus] = useState<"linked" | "new_discovery" | null>(null);
   const [streak, setStreak] = useState(0);
   const [anotherExampleIndex, setAnotherExampleIndex] = useState(0);
+  const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
+
+  const setViewStep = (newStep: number) => {
+    setDirection(newStep >= axiomStep ? 1 : -1);
+    setAxiomStep(newStep);
+  };
 
   const recordStepProgress = async (step: number) => {
     if (!result || !user) return;
@@ -1727,6 +1733,53 @@ function UnderstandableEngine() {
     );
   }
 
+  // Variants for the slide transitions
+  const slideVariants = {
+    initial: (direction: number) => ({
+      x: direction > 0 ? '100%' : '-100%',
+      opacity: 0,
+    }),
+    animate: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        x: { type: "spring" as const, stiffness: 300, damping: 30 },
+        opacity: { duration: 0.2 }
+      }
+    },
+    exit: (direction: number) => ({
+      x: direction > 0 ? '-100%' : '100%',
+      opacity: 0,
+      transition: {
+        x: { type: "spring" as const, stiffness: 300, damping: 30 },
+        opacity: { duration: 0.2 }
+      }
+    })
+  };
+
+  // Variants for top-level view transitions
+  const viewVariants = {
+    initial: { x: '100%', opacity: 0 },
+    animate: { 
+      x: 0, 
+      opacity: 1, 
+      transition: { 
+        type: "spring" as const, 
+        stiffness: 300, 
+        damping: 30 
+      } 
+    },
+    exit: { 
+      x: '-100%', 
+      opacity: 0, 
+      transition: { 
+        type: "spring" as const, 
+        stiffness: 300, 
+        damping: 30 
+      } 
+    }
+  };
+
   if (!authReady) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
@@ -1736,7 +1789,7 @@ function UnderstandableEngine() {
   }
 
   return (
-    <div className="min-h-screen transition-colors duration-700 relative flex flex-col overflow-x-hidden overflow-y-auto bg-grid bg-bg text-ink">
+    <div className={`min-h-screen transition-colors duration-700 relative flex flex-col overflow-x-hidden overflow-y-auto bg-grid bg-bg text-ink`}>
       <div className="w-full min-h-screen flex flex-col relative bg-inherit">
         {/* Onboarding Overlay */}
         <AnimatePresence>
@@ -2049,330 +2102,193 @@ function UnderstandableEngine() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col md:flex-row z-10 transition-all md:divide-x divide-white/5">
+        <main className="flex-1 flex flex-col md:flex-row z-10 transition-all md:divide-x divide-white/5 relative overflow-x-hidden">
           
-          {/* INPUT COLUMN */}
-          {!showIndex && (
-            <motion.section 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={`w-full md:w-[32%] flex flex-col p-6 md:p-10 lg:px-20 lg:py-32 border-b md:border-b-0 md:sticky md:top-16 md:h-[calc(100vh-80px)] overflow-y-auto no-scrollbar
-                ${result ? 'hidden md:flex' : 'flex'}
-              `}
-            >
-            <div className="w-full md:max-w-md md:ml-auto">
-              <span className="font-mono text-[10px] md:text-sm tracking-[0.4em] uppercase mb-4 block font-black text-ink">
-                Understand Anything. Instantly.
-              </span>
-              
-              <div className="relative p-6 md:p-10 border-2 md:border-4 transition-all duration-500 bg-surface border-border shadow-[12px_12px_0_0_rgba(0,0,0,0.03)] rounded-3xl">
-                <textarea
-                  ref={inputRef}
-                  value={concept}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (val.length <= MAX_CONCEPT_LENGTH) {
-                      setConcept(val);
-                      setConceptError(null);
-                    } else {
-                      setConceptError(`Topic must be under ${MAX_CONCEPT_LENGTH} characters.`);
-                    }
-
-                    if (e.target.scrollHeight < 400) {
-                      e.target.style.height = 'auto';
-                      e.target.style.height = Math.max(e.target.scrollHeight, 60) + 'px';
-                    }
-                  }}
-                  onKeyDown={handleKey}
-                  placeholder="Type any topic you want to understand..."
-                  rows={1}
-                  className={`w-full bg-transparent border-none outline-none resize-none transition-all duration-700 break-words placeholder:opacity-60 text-xl md:text-3xl lg:text-4xl font-display font-black text-ink tracking-tighter leading-none
-                    ${conceptError ? "text-red-500" : ""}
-                  `}
-                />
-              </div>
-
-              {conceptError && (
-                <div className="mt-4 p-4 bg-red-500/10 border-2 border-red-500/40 text-red-500 text-[10px] font-mono uppercase tracking-widest leading-loose">
-                  {conceptError}
-                </div>
-              )}
-
-              <div className="mt-2 flex justify-between items-center">
-                {!user && (
-                  <div className="flex flex-col gap-2">
-                    <button 
-                      onClick={handleLogin}
-                      className="font-mono text-[10px] uppercase tracking-widest text-accent font-black hover:opacity-100 transition-opacity opacity-80"
-                    >
-                      Sign in to save and sync topics
-                    </button>
-                    <div className="flex gap-4 font-mono text-[8px] uppercase tracking-widest opacity-30">
-                      <button onClick={() => setShowTerms(true)} className="hover:opacity-100 hover:text-accent transition-all">Terms</button>
-                      <button onClick={() => setShowPrivacy(true)} className="hover:opacity-100 hover:text-accent transition-all">Privacy</button>
-                    </div>
-                  </div>
-                )}
-                <span className={`font-mono text-[10px] uppercase tracking-widest transition-opacity ml-auto ${concept.length > MAX_CONCEPT_LENGTH * 0.8 ? "opacity-100" : "opacity-40"}`}>
-                  {concept.length} / {MAX_CONCEPT_LENGTH}
-                </span>
-              </div>
-
-              <div className="mt-8 md:mt-12 mb-8 md:mb-12">
-                <button
-                  onClick={() => {
-                    understandTopic();
-                  }}
-                  disabled={concept.length === 0 || !!conceptError || loading}
-                  className={`w-full group flex items-center justify-center gap-6 px-8 py-5 md:px-12 md:py-8 font-mono text-sm md:text-lg uppercase tracking-[0.2em] font-black transition-all border-4 shadow-[8px_8px_0_0_rgba(255,255,255,0.1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_0_rgba(255,255,255,0.15)] active:translate-x-0 active:translate-y-0 active:shadow-[4px_4px_0_0_rgba(255,255,255,0.1)]
-                    ${(concept.length === 0 || !!conceptError || loading) ? "opacity-30 cursor-not-allowed" : "opacity-100"}
-                    bg-black border-white/20 text-white hover:bg-white hover:text-black
-                  `}
-                >
-                  {loading ? "Synthesizing..." : "Understand it!"}
-                </button>
-              </div>
-
-              {/* SUGGESTIONS */}
-              <div className="mb-24 transition-opacity">
-                <div className="flex items-center justify-between mb-8">
-                  <span className="font-mono text-xs uppercase tracking-[0.3em] font-black opacity-80">Try these topics</span>
-                  <Tooltip text="Shuffle Concepts">
-                    <button 
-                      onClick={refreshSuggestions}
-                      className="p-2 transition-opacity"
-                      title="Shuffle concepts"
-                    >
-                      <RotateCcw className="w-5 h-5" strokeWidth={3} />
-                    </button>
-                  </Tooltip>
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  {suggestions.map((s, i) => {
-                    const colors = [
-                      "bg-[#FFD1DC] text-black border-[#FFB1C1] hover:bg-[#FFC1CC]", // Pink
-                      "bg-[#B3E5FC] text-black border-[#81D4FA] hover:bg-[#A1D5EC]", // Blue
-                      "bg-[#FFF9C4] text-black border-[#FFF176] hover:bg-[#FFF5B4]", // Yellow
-                      "bg-[#C8E6C9] text-black border-[#A5D6A7] hover:bg-[#B8D6B9]", // Green
-                      "bg-[#E1BEE7] text-black border-[#CE93D8] hover:bg-[#D1AEC7]", // Purple
-                    ];
-                    const rotations = ["rotate-1", "-rotate-1", "rotate-2", "-rotate-2", "rotate-0"];
-                    const colorClass = colors[i % colors.length];
-                    const rotationClass = rotations[i % rotations.length];
-
-                    return (
-                      <button
-                        key={`concept-sug-item-${i}-${s.concept.replace(/\s+/g, '_')}-${s.isVault ? 'v' : 'r'}`}
-                        onClick={() => understandTopic(s.concept)}
-                        className={`text-left p-6 border-2 transition-all group/sug aspect-square flex flex-col justify-between shadow-[6px_6px_0_0_rgba(0,0,0,0.1)] hover:shadow-[10px_10px_0_0_rgba(0,0,0,0.15)] hover:translate-y-[-2px]
-                          ${colorClass} ${rotationClass} font-sans text-[10px] md:text-sm uppercase font-black tracking-widest overflow-hidden
-                        `}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="w-4 h-1 bg-black/10" />
-                          {s.isVault && <span className="text-[8px] opacity-40 font-mono tracking-tighter">CONFIRMED</span>}
-                        </div>
-                        <span className="line-clamp-4 leading-tight">{s.concept}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-            <div className={`space-y-8 max-w-xs transition-all duration-1000
-              ${loading ? "opacity-100" : "opacity-80"}
-            `}>
-              <div className="h-3 w-40 bg-accent" />
-              <p className="text-lg font-mono uppercase tracking-[0.4em] leading-loose text-current font-black">
-                {loading ? "Thinking about your topic..." : "Ready to start"}
-              </p>
-            </div>
-          </div>
-        </motion.section>
-        )}
-
-        {/* RESULT COLUMN */}
-        <section ref={resultRef} className={`w-full ${!showIndex ? 'md:w-[68%]' : 'md:w-full'} flex flex-col p-6 md:p-12 lg:px-24 lg:py-24 transition-all duration-1000 bg-bg`}>
-          <div className="flex-1 flex flex-col justify-center py-10">
-            <AnimatePresence mode="wait">
-            {showIndex ? (
-              <motion.div
-                key="index"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col h-full"
+          <AnimatePresence mode="popLayout" initial={false}>
+            {/* VIEW: HOME (INPUT + SUGGESTIONS) */}
+            {!showIndex && !result && (
+              <motion.section 
+                key="view-home"
+                variants={viewVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="w-full md:w-[32%] flex-1 md:flex-initial flex flex-col p-6 md:p-10 lg:px-20 lg:py-32 border-b md:border-b-0 md:sticky md:top-16 md:h-[calc(100vh-80px)] overflow-y-auto no-scrollbar bg-bg"
               >
-                <div className="mb-8 md:mb-16 flex flex-col gap-8 border-b-4 md:border-b-8 border-current pb-12">
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-                    <div className="flex flex-wrap gap-8 md:gap-16">
-                      {["personal", "global"].map(type => (
-                        <button 
-                          key={`tab-${type}`}
-                          onClick={() => {
-                            setIndexType(type as any);
-                            setActiveDomain(null);
-                          }}
-                          className={`font-sans text-xl md:text-2xl font-black uppercase tracking-[0.2em] md:tracking-[0.4em] transition-all
-                            ${indexType === type ? "scale-105 md:scale-110 text-accent underline underline-offset-8 md:underline-offset-[16px] decoration-4 md:decoration-8" : "opacity-30 hover:opacity-100"}
-                          `}
-                        >
-                          {type === "personal" ? "My Vault" : "The Core Index"}
-                        </button>
-                      ))}
-                    </div>
-                    <button onClick={() => setShowIndex(false)} className="w-full md:w-auto font-mono text-[10px] md:text-sm uppercase tracking-widest font-black border-2 border-ink px-6 py-3 md:px-8 md:py-4 hover:bg-ink hover:text-bg transition-all shadow-[6px_6px_0_0_rgba(0,0,0,0.1)] rounded-xl text-ink shrink-0">← Back</button>
-                  </div>
-
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 opacity-40" />
-                      <input 
-                        type="text"
-                        placeholder="Search for a concept..."
-                        value={indexSearch}
-                        onChange={(e) => setIndexSearch(e.target.value)}
-                        className="w-full bg-current/5 border-2 border-current/10 rounded-2xl py-5 pl-16 pr-6 font-mono text-sm uppercase tracking-widest font-black outline-none focus:border-accent transition-colors"
-                      />
-                    </div>
-                    
-                    <div className="flex gap-2 bg-current/5 p-1.5 rounded-2xl border-2 border-current/10">
-                      {(["alpha", "rank", "tags"] as const).map(mode => (
-                        <button
-                          key={`sort-${mode}`}
-                          onClick={() => setIndexSort(mode)}
-                          className={`px-5 py-3 rounded-xl font-mono text-[10px] uppercase tracking-widest font-black transition-all
-                            ${indexSort === mode ? "bg-accent text-bg shadow-[4px_4px_0_0_rgba(0,0,0,0.1)]" : "opacity-40 hover:opacity-100"}
-                          `}
-                        >
-                          {mode === "alpha" ? "A-Z" : mode === "rank" ? "Popular" : "Groups"}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <div className="flex gap-3 overflow-x-auto no-scrollbar py-2 max-w-md">
-                      {Array.from(new Set(
-                        (indexType === "personal" ? savedUnderstandables : globalLogs)
-                          .map(ax => ax.domain || ax.payload?.domain || "General")
-                      )).sort().map(domain => (
-                        <button
-                          key={`domain-filter-${domain}`}
-                          onClick={() => setActiveDomain(activeDomain === domain ? null : domain)}
-                          className={`px-6 py-3 rounded-full font-mono text-[10px] uppercase tracking-widest font-black transition-all whitespace-nowrap border-2
-                            ${activeDomain === domain ? "bg-accent border-accent text-bg" : "bg-bg border-current/10 text-ink/40 hover:border-current hover:text-ink"}
-                          `}
-                        >
-                          {domain}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto pr-4 md:pr-10 custom-scrollbar">
-                  {loadingIndex ? (
-                    <div className="h-full flex items-center justify-center font-mono text-2xl uppercase tracking-[0.4em] animate-pulse font-black italic opacity-40">Scanning Global Records...</div>
-                  ) : (
-                    <div className="pb-20">
-                      {(() => {
-                        const baseItems = (indexType === "personal" ? savedUnderstandables : globalLogs)
-                          .filter(ax => {
-                            const matchesSearch = ax.concept.toLowerCase().includes(indexSearch.toLowerCase());
-                            const matchesDomain = !activeDomain || (ax.domain || ax.payload?.domain) === activeDomain;
-                            return matchesSearch && matchesDomain;
-                          });
-
-                        // Sorting logic
-                        const sortedItems = [...baseItems].sort((a, b) => {
-                          if (indexSort === "alpha") return a.concept.localeCompare(b.concept);
-                          if (indexSort === "rank") return (b.rank || 0) - (a.rank || 0);
-                          return 0; // "tags" uses a different rendering block below
-                        });
-
-                        if (indexSort === "tags") {
-                          const groups: { [key: string]: any[] } = {};
-                          sortedItems.forEach(item => {
-                            const tags = item.tags || (item.payload?.tags) || ["Uncategorized"];
-                            tags.forEach((tag: string) => {
-                              if (!groups[tag]) groups[tag] = [];
-                              // Avoid duplicating items across tags for a cleaner view
-                              if (!groups[tag].find(i => (i.id || i.concept) === (item.id || item.concept))) groups[tag].push(item);
-                            });
-                          });
-
-                          return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0])).map(([tag, items]) => (
-                            <div key={`tag-group-${tag}`} className="mb-16">
-                              <div className="flex items-center gap-6 mb-8">
-                                <h4 className="font-mono text-xs uppercase tracking-[0.4em] font-black text-accent bg-accent/10 px-6 py-2 rounded-full border border-accent/20">
-                                  {tag}
-                                </h4>
-                                <div className="flex-1 h-px bg-current/5" />
-                                <span className="font-mono text-[10px] opacity-30">{items.length} {items.length === 1 ? 'Concept' : 'Concepts'}</span>
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
-                                {items.map((ax, i) => renderConceptCard(ax, i, `tagged-${tag}`))}
-                              </div>
-                            </div>
-                          ));
+                <div className="w-full md:max-w-md md:ml-auto">
+                  <span className="font-mono text-[10px] md:text-sm tracking-[0.4em] uppercase mb-4 block font-black text-ink">
+                    Understand Anything. Instantly.
+                  </span>
+                  
+                  <div className="relative p-6 md:p-10 border-2 md:border-4 transition-all duration-500 bg-surface border-border shadow-[12px_12px_0_0_rgba(0,0,0,0.03)] rounded-3xl">
+                    <textarea
+                      ref={inputRef}
+                      value={concept}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val.length <= MAX_CONCEPT_LENGTH) {
+                          setConcept(val);
+                          setConceptError(null);
+                        } else {
+                          setConceptError(`Topic must be under ${MAX_CONCEPT_LENGTH} characters.`);
                         }
 
-                        return (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
-                            {sortedItems.map((ax, i) => renderConceptCard(ax, i, "sorted"))}
-                          </div>
-                        );
-                      })()}
+                        if (e.target.scrollHeight < 400) {
+                          e.target.style.height = 'auto';
+                          e.target.style.height = Math.max(e.target.scrollHeight, 60) + 'px';
+                        }
+                      }}
+                      onKeyDown={handleKey}
+                      placeholder="Type any topic you want to understand..."
+                      rows={1}
+                      className={`w-full bg-transparent border-none outline-none resize-none transition-all duration-700 break-words placeholder:opacity-60 text-xl md:text-3xl lg:text-4xl font-display font-black text-ink tracking-tighter leading-none
+                        ${conceptError ? "text-red-500" : ""}
+                      `}
+                    />
+                  </div>
 
-                      {(indexType === "personal" ? savedUnderstandables : globalLogs)
-                        .filter(ax => {
-                          const matchesSearch = ax.concept.toLowerCase().includes(indexSearch.toLowerCase());
-                          const matchesDomain = !activeDomain || (ax.domain || ax.payload?.domain) === activeDomain;
-                          return matchesSearch && matchesDomain;
-                        }).length === 0 && (
-                        <div key="empty-search-state" className="py-20 md:py-40 text-center font-sans max-w-lg mx-auto">
-                           <div className="text-6xl mb-10 grayscale opacity-20 transform hover:scale-110 transition-transform">
-                             {indexType === "personal" && !indexSearch ? "📭" : "🕳️"}
-                           </div>
-                           <h4 className="text-2xl font-black uppercase tracking-widest opacity-40 mb-4">
-                             {indexType === "personal" && !indexSearch ? "Your Vault is Empty" : "Concept not found"}
-                           </h4>
-                           <p className="font-mono text-sm opacity-40 uppercase tracking-tight mb-12">
-                             {indexType === "personal" && !indexSearch 
-                               ? "You haven't established any personal truths yet. Start your first synthesis to begin your mapping." 
-                               : "The core records are empty in this sector. Try refining your search parameters."}
-                           </p>
-                           {indexType === "personal" && !indexSearch && (
-                             <button 
-                               onClick={() => setShowIndex(false)}
-                               className="px-10 py-5 bg-accent text-bg rounded-2xl font-mono text-sm uppercase tracking-widest font-black shadow-[10px_10px_0_0_rgba(0,0,0,0.1)] hover:translate-y-[-4px] active:translate-y-0 transition-all"
-                             >
-                               Generate First Map
-                             </button>
-                           )}
-                        </div>
-                      )}
-                      
-                      <div className="mt-20 flex justify-center">
-                        <button 
-                          onClick={() => setShowIndex(false)}
-                          className="font-mono text-sm md:text-lg uppercase tracking-[0.4em] font-black border-b-4 border-accent text-accent pb-2 hover:opacity-70 transition-all"
-                        >
-                          ← Synthesize New Topic
-                        </button>
-                      </div>
+                  {conceptError && (
+                    <div className="mt-4 p-4 bg-red-500/10 border-2 border-red-500/40 text-red-500 text-[10px] font-mono uppercase tracking-widest leading-loose">
+                      {conceptError}
                     </div>
                   )}
+
+                  <div className="mt-2 flex justify-between items-center">
+                    {!user && (
+                      <div className="flex flex-col gap-2">
+                        <button 
+                          onClick={handleLogin}
+                          className="font-mono text-[10px] uppercase tracking-widest text-accent font-black hover:opacity-100 transition-opacity opacity-80"
+                        >
+                          Sign in to save and sync topics
+                        </button>
+                        <div className="flex gap-4 font-mono text-[8px] uppercase tracking-widest opacity-30">
+                          <button onClick={() => setShowTerms(true)} className="hover:opacity-100 hover:text-accent transition-all">Terms</button>
+                          <button onClick={() => setShowPrivacy(true)} className="hover:opacity-100 hover:text-accent transition-all">Privacy</button>
+                        </div>
+                      </div>
+                    )}
+                    <span className={`font-mono text-[10px] uppercase tracking-widest transition-opacity ml-auto ${concept.length > MAX_CONCEPT_LENGTH * 0.8 ? "opacity-100" : "opacity-40"}`}>
+                      {concept.length} / {MAX_CONCEPT_LENGTH}
+                    </span>
+                  </div>
+
+                  <div className="mt-8 md:mt-12 mb-8 md:mb-12">
+                    <button
+                      onClick={() => {
+                        understandTopic();
+                      }}
+                      disabled={concept.length === 0 || !!conceptError || loading}
+                      className={`w-full group flex items-center justify-center gap-6 px-8 py-5 md:px-12 md:py-8 font-mono text-sm md:text-lg uppercase tracking-[0.2em] font-black transition-all border-4 shadow-[8px_8px_0_0_rgba(255,255,255,0.1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_0_rgba(255,255,255,0.15)] active:translate-x-0 active:translate-y-0 active:shadow-[4px_4px_0_0_rgba(255,255,255,0.1)]
+                        ${(concept.length === 0 || !!conceptError || loading) ? "opacity-30 cursor-not-allowed" : "opacity-100"}
+                        bg-black border-white/20 text-white hover:bg-white hover:text-black
+                      `}
+                    >
+                      {loading ? "Synthesizing..." : "Understand it!"}
+                    </button>
+                  </div>
+
+                  {/* SUGGESTIONS */}
+                  <div className="mb-24 transition-opacity">
+                    <div className="flex items-center justify-between mb-8">
+                      <span className="font-mono text-xs uppercase tracking-[0.3em] font-black opacity-80">Try these topics</span>
+                      <Tooltip text="Shuffle Concepts">
+                        <button 
+                          onClick={refreshSuggestions}
+                          className="p-2 transition-opacity"
+                          title="Shuffle concepts"
+                        >
+                          <RotateCcw className="w-5 h-5" strokeWidth={3} />
+                        </button>
+                      </Tooltip>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                      {suggestions.map((s, i) => {
+                        const colors = [
+                          "bg-[#FFD1DC] text-black border-[#FFB1C1] hover:bg-[#FFC1CC]", // Pink
+                          "bg-[#B3E5FC] text-black border-[#81D4FA] hover:bg-[#A1D5EC]", // Blue
+                          "bg-[#FFF9C4] text-black border-[#FFF176] hover:bg-[#FFF5B4]", // Yellow
+                          "bg-[#C8E6C9] text-black border-[#A5D6A7] hover:bg-[#B8D6B9]", // Green
+                          "bg-[#E1BEE7] text-black border-[#CE93D8] hover:bg-[#D1AEC7]", // Purple
+                        ];
+                        const rotations = ["rotate-1", "-rotate-1", "rotate-2", "-rotate-2", "rotate-0"];
+                        const colorClass = colors[i % colors.length];
+                        const rotationClass = rotations[i % rotations.length];
+
+                        return (
+                          <button
+                            key={`concept-sug-item-${i}-${s.concept.replace(/\s+/g, '_')}-${s.isVault ? 'v' : 'r'}`}
+                            onClick={() => understandTopic(s.concept)}
+                            className={`text-left p-6 border-2 transition-all group/sug aspect-square flex flex-col justify-between shadow-[6px_6px_0_0_rgba(0,0,0,0.1)] hover:shadow-[10px_10px_0_0_rgba(0,0,0,0.15)] hover:translate-y-[-2px]
+                              ${colorClass} ${rotationClass} font-sans text-[10px] md:text-sm uppercase font-black tracking-widest overflow-hidden
+                            `}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="w-4 h-1 bg-black/10" />
+                              {s.isVault && <span className="text-[8px] opacity-40 font-mono tracking-tighter">CONFIRMED</span>}
+                            </div>
+                            <span className="line-clamp-4 leading-tight">{s.concept}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={`space-y-8 max-w-xs transition-all duration-1000
+                    ${loading ? "opacity-100" : "opacity-80"}
+                  `}>
+                    <div className="h-3 w-40 bg-accent" />
+                    <p className="text-lg font-mono uppercase tracking-[0.4em] leading-loose text-current font-black">
+                      {loading ? "Thinking about your topic..." : "Ready to start"}
+                    </p>
+                  </div>
+
+                  <div className="mt-12 pt-12 border-t-2 border-dashed border-border flex flex-col gap-4">
+                    <button 
+                      onClick={() => setShowLibrary(true)}
+                      className="flex items-center gap-4 p-6 bg-surface border-2 border-border rounded-2xl font-display text-xl font-black uppercase tracking-tight hover:border-accent hover:bg-accent/5 transition-all text-ink group"
+                    >
+                      <BookOpen size={20} className="text-accent group-hover:scale-110 transition-transform" />
+                      Learning Library
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const surpriseTopics = [
+                          "The Voynich Manuscript", "Panpsychism", "Strange Attractors", "Bioluminescence", "The Fermi Paradox", "Fractals in Nature", "The History of Zero"
+                        ];
+                        const randomTopic = surpriseTopics[Math.floor(Math.random() * surpriseTopics.length)];
+                        understandTopic(randomTopic);
+                      }}
+                      className="flex items-center gap-4 p-6 bg-accent/10 border-2 border-accent/20 rounded-2xl font-mono text-xs uppercase tracking-[0.2em] font-black hover:bg-accent hover:text-bg transition-all text-accent group"
+                    >
+                      <Sparkles size={16} className="group-hover:rotate-12 transition-transform" />
+                      Surprise Me
+                    </button>
+                  </div>
                 </div>
-              </motion.div>
-            ) : result ? (
-              <motion.div
-                key="result"
-                initial={{ opacity: 0, y: 60 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -60 }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full max-w-6xl mx-auto flex flex-col min-h-[70vh]"
+              </motion.section>
+            )}
+
+            {/* VIEW: DISCOVERY FLOW (RESULT) */}
+            {result && !showIndex && (
+              <motion.section 
+                key="view-result"
+                variants={viewVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                ref={resultRef} 
+                className="w-full flex-1 flex flex-col p-6 md:p-12 lg:px-24 lg:py-24 transition-all duration-1000 bg-bg min-h-[calc(100vh-80px)] overflow-y-auto"
               >
+                <div className="flex-1 flex flex-col justify-center py-10">
+                  <motion.div
+                    key="result"
+                    initial={{ opacity: 0, y: 60 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -60 }}
+                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    className="w-full max-w-6xl mx-auto flex flex-col min-h-[70vh]"
+                  >
                 <div className="mb-8 flex justify-between items-center">
                   <button 
                     onClick={() => { setConcept(""); setResult(null); }}
@@ -2390,14 +2306,14 @@ function UnderstandableEngine() {
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col justify-center relative">
-                  <AnimatePresence mode="wait">
+                <div className="flex-1 flex flex-col justify-center relative overflow-hidden">
+                  <AnimatePresence mode="popLayout" custom={direction} initial={false}>
                     {isRefining && (
                       <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-10 bg-bg/80 backdrop-blur-sm flex flex-col items-center justify-center gap-6"
+                        className="absolute inset-0 z-[60] bg-bg/80 backdrop-blur-sm flex flex-col items-center justify-center gap-6"
                       >
                          <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin" />
                          <span className="font-mono text-sm uppercase tracking-[0.4em] font-black animate-pulse">Recalibrating Layer...</span>
@@ -2406,10 +2322,12 @@ function UnderstandableEngine() {
                     {axiomStep === 0 && (
                       <motion.div 
                         key="step0"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-12"
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="space-y-12 w-full"
                       >
                          <SectionLabel>The Anchor</SectionLabel>
                          <h2 className="text-4xl md:text-8xl font-display font-black uppercase tracking-tight leading-none text-ink">{concept}</h2>
@@ -2424,12 +2342,14 @@ function UnderstandableEngine() {
                     {axiomStep === 1 && (
                       <motion.div 
                         key="step1"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-12"
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="space-y-12 w-full"
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
                           <StateStamp label={result.axis1?.labelA || "The Abundance"} type="success" />
                           <UnderstandableVoice text={result.axis1?.stateA || result.stateA} />
                         </div>
@@ -2463,12 +2383,14 @@ function UnderstandableEngine() {
                     {axiomStep === 2 && (
                       <motion.div 
                         key="step2"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-12"
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="space-y-12 w-full"
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
                           <StateStamp label={result.axis1?.labelB || "The Scarcity"} type="struggle" />
                           <UnderstandableVoice text={result.axis1?.stateB || result.stateB} />
                         </div>
@@ -2502,12 +2424,14 @@ function UnderstandableEngine() {
                     {axiomStep === 3 && (
                       <motion.div 
                         key="step3"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="p-12 md:p-20 border-4 border-accent/20 bg-accent/5 rounded-[3rem] space-y-12"
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="p-8 md:p-12 lg:p-20 border-4 border-accent/20 bg-accent/5 rounded-[3rem] space-y-12 w-full"
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
                           <SectionLabel>The Hidden Mechanism</SectionLabel>
                           <UnderstandableVoice text={result.axis2?.mechanism} />
                         </div>
@@ -2521,12 +2445,14 @@ function UnderstandableEngine() {
                     {axiomStep === 4 && (
                       <motion.div 
                         key="step4"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-12"
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="space-y-12 w-full"
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
                           <SectionLabel>The Zenith</SectionLabel>
                           <UnderstandableVoice text={result.axis3?.zenith || result.zenith} />
                         </div>
@@ -2549,9 +2475,12 @@ function UnderstandableEngine() {
                     {axiomStep === 5 && (
                       <motion.div 
                         key="step5"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center space-y-12 py-20"
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="text-center space-y-12 py-10 md:py-20 w-full"
                       >
                         <div className="h-2 w-24 bg-accent mx-auto rounded-full" />
                         <h3 className="text-4xl md:text-7xl font-display font-black uppercase text-ink tracking-tighter">Clarity Gained?</h3>
@@ -2562,7 +2491,7 @@ function UnderstandableEngine() {
                         <div className="flex flex-col md:flex-row gap-6 justify-center mt-12">
                            <button 
                              onClick={cyclePerspective}
-                             className="px-12 py-8 rounded-3xl border-4 border-accent text-accent font-mono text-lg uppercase tracking-widest font-black hover:bg-accent hover:text-bg transition-all flex items-center justify-center gap-4 group"
+                             className="px-8 py-6 md:px-12 md:py-8 rounded-3xl border-4 border-accent text-accent font-mono text-lg uppercase tracking-widest font-black hover:bg-accent hover:text-bg transition-all flex items-center justify-center gap-4 group"
                            >
                               <RotateCcw className={`w-6 h-6 transition-transform group-hover:rotate-[-180deg] ${isRefining ? "animate-spin" : ""}`} />
                               Shift Lens
@@ -2570,22 +2499,16 @@ function UnderstandableEngine() {
                            <button 
                              onClick={lockInTruth}
                              disabled={saving || saveSuccess}
-                             className="px-12 py-10 bg-accent border-4 border-accent text-bg rounded-4xl flex items-center justify-between gap-12 group hover:bg-bg hover:text-accent transition-all active:scale-95 shadow-[20px_20px_0_0_rgba(74,103,65,0.1)]"
+                             className="px-8 py-6 md:px-12 md:py-10 bg-accent border-4 border-accent text-bg rounded-4xl flex items-center justify-between gap-12 group hover:bg-bg hover:text-accent transition-all active:scale-95 shadow-[10px_10px_0_0_rgba(74,103,65,0.1)] md:shadow-[20px_20px_0_0_rgba(74,103,65,0.1)]"
                            >
                              <AhaSparkle active={showSparkle} status={affirmationStatus} concept={concept} />
                              <div className="flex flex-col items-start text-left">
                                <span className="font-mono text-[10px] uppercase tracking-[0.4em] font-black opacity-40 italic">Final Step</span>
-                               <span className="font-display text-2xl md:text-4xl font-black uppercase">Understanding locked in!</span>
+                               <span className="font-display text-xl md:text-3xl lg:text-4xl font-black uppercase">Understand it!</span>
                              </div>
-                             <div className="w-16 h-16 bg-bg flex items-center justify-center rounded-full text-accent group-hover:bg-accent group-hover:text-bg transition-all">
-                               <ArrowRight className="w-10 h-10" strokeWidth={3} />
+                             <div className="w-12 h-12 md:w-16 md:h-16 bg-bg flex items-center justify-center rounded-full text-accent group-hover:bg-accent group-hover:text-bg transition-all">
+                               <ArrowRight className="w-6 h-6 md:w-10 md:h-10" strokeWidth={3} />
                              </div>
-                           </button>
-                           <button 
-                            onClick={() => { setConcept(""); setResult(null); }}
-                            className="px-12 py-8 rounded-3xl border-4 border-ink font-mono text-lg uppercase tracking-widest font-black hover:bg-ink hover:text-bg transition-all"
-                           >
-                              Explore Next Topic →
                            </button>
                         </div>
                       </motion.div>
@@ -2650,32 +2573,22 @@ function UnderstandableEngine() {
                 {/* AXIOM CONTROLS */}
                 {axiomStep < 5 && (
                   <div className="mt-20 flex gap-4 h-24 md:h-32">
-                    {axiomStep > 1 && (
+                    {axiomStep > 0 && (
                       <button 
-                        id={`axiom-refine-btn-${axiomStep}`}
-                        onClick={refineCurrentAxiom}
-                        disabled={isRefining}
-                        className="flex-[1] bg-soft-red/5 border-4 border-soft-red/20 text-soft-red rounded-3xl flex flex-col items-center justify-center hover:bg-soft-red hover:text-white transition-all group disabled:opacity-50"
+                        onClick={() => setViewStep(axiomStep - 1)}
+                        className="flex-[1] bg-ink/5 border-4 border-ink/20 text-ink rounded-3xl flex flex-col items-center justify-center hover:bg-ink hover:text-white transition-all group lg:min-w-[120px]"
                       >
-                        <RotateCcw className={`w-6 h-6 mb-2 ${isRefining ? "animate-spin" : "group-hover:rotate-[-45deg] transition-transform"}`} />
-                        <span className="font-mono text-[10px] md:text-xs uppercase tracking-widest font-black">Confusing</span>
+                        <ChevronLeft className={`w-6 h-6 mb-2 group-hover:-translate-x-1 transition-transform`} />
+                        <span className="font-mono text-[10px] md:text-xs uppercase tracking-widest font-black">Back</span>
                       </button>
                     )}
-                    <button 
-                      id={`axiom-feedback-btn-${axiomStep}`}
-                      onClick={() => setShowFeedback(true)}
-                      className="hidden md:flex flex-col items-center justify-center bg-ink/5 border-4 border-ink/10 text-ink rounded-3xl w-24 hover:bg-ink/10 transition-all group"
-                    >
-                      <MessageSquare className="w-5 h-5 mb-1 group-hover:scale-110 transition-transform" />
-                      <span className="font-mono text-[8px] uppercase tracking-widest font-black opacity-60">Feedback</span>
-                    </button>
                     <button 
                       id={`axiom-next-btn-${axiomStep}`}
                       onClick={async () => {
                         await recordStepProgress(axiomStep);
-                        setAxiomStep(prev => prev + 1);
+                        setViewStep(axiomStep + 1);
                       }}
-                      className="flex-[2] bg-accent border-4 border-accent text-bg rounded-3xl flex items-center justify-between px-10 md:px-16 hover:bg-bg hover:text-accent transition-all group active:scale-95 relative overflow-hidden"
+                      className="flex-[3] bg-accent border-4 border-accent text-bg rounded-3xl flex items-center justify-between px-8 md:px-16 hover:bg-bg hover:text-accent transition-all group active:scale-95 relative overflow-hidden"
                     >
                       <div className="flex flex-col items-start">
                         <span className="font-mono text-[10px] md:text-xs uppercase tracking-widest font-black opacity-60">I Understand</span>
@@ -2686,125 +2599,57 @@ function UnderstandableEngine() {
                   </div>
                 )}
               </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center h-full text-center"
-              >
-                <div className="flex flex-col items-center">
-                  {error ? (
-                    <motion.div 
-                      key="error-state"
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="max-w-md p-16 border-2 transition-all relative overflow-hidden bg-red-500/10 border-red-500/40"
-                    >
-                      <div className="absolute top-0 left-0 w-full h-1 bg-red-500" />
-                      <AlertTriangle className="w-12 h-12 text-red-500 mb-10 opacity-80" strokeWidth={2.5} />
-                      <h3 className="font-mono text-lg uppercase tracking-[0.5em] mb-12 font-black text-red-500">
-                        Synchrony Failure // Flux 429
-                      </h3>
-                      <p className={`font-sans font-bold text-2xl leading-relaxed mb-16
-                        ${theme === "studio" ? "text-ink" : "text-bg"}
-                      `}>
-                        {error}
-                      </p>
-                      <button 
-                        onClick={() => {
-                          setError(null);
-                          setTimeout(understandTopic, 100);
-                        }}
-                        className={`w-full font-mono text-lg uppercase tracking-[0.3em] px-10 py-8 transition-all border-4 font-black shadow-[12px_12px_0_0_rgba(239,68,68,0.2)] rounded-xl
-                          ${theme === "studio" ? "bg-red-500 border-red-500 text-bg hover:bg-bg hover:text-red-500" : "border-ink text-ink hover:bg-ink hover:text-bg"}
-                        `}
-                      >
-                        Re-initialize Link →
-                      </button>
-                    </motion.div>
-                  ) : loading ? (
-                    <>
-                      <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mb-6 border border-accent/20">
-                        <div className="w-4 h-4 rounded-full border-2 border-accent animate-ping" />
-                      </div>
-                      <div className="flex gap-4 mb-4 font-mono text-xs uppercase tracking-widest font-black">
-                        <span className="animate-pulse text-accent uppercase tracking-[0.2em]">Thinking about your topic</span>
-                        <div className="flex gap-1 items-center">
-                          <span className="animate-bounce">.</span>
-                          <span className="animate-bounce [animation-delay:0.2s]">.</span>
-                          <span className="animate-bounce [animation-delay:0.4s]">.</span>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          setLoading(false);
-                          setResult(null);
-                        }}
-                        className="mt-6 font-mono text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-soft-red transition-all flex items-center gap-2 group"
-                      >
-                        <RotateCcw size={12} className="group-hover:rotate-180 transition-transform duration-500" />
-                        Abort Synthesis
-                      </button>
-                      <span className="font-mono text-xs text-ink font-black uppercase tracking-[0.5em]">Building your explanation</span>
-                    </>
-                  ) : (
-                    null
-                  )}
-                  {user && savedUnderstandables.length > 0 && !loading && (
-                    <div className="mt-12 md:mt-24 space-y-12">
-                      <div className="flex flex-col items-center gap-6">
-                        <p className="font-sans text-xl md:text-2xl font-bold opacity-60">
-                          Structured Exploration or Random Synthesis?
-                        </p>
-                        <div className="flex flex-col md:flex-row gap-6">
-                          <button 
-                            onClick={() => setShowLibrary(true)}
-                            className="flex items-center gap-4 px-12 py-8 bg-ink text-bg rounded-3xl font-display text-2xl font-black uppercase tracking-tighter hover:scale-105 transition-all shadow-xl group"
-                          >
-                            <BookOpen size={28} className="group-hover:rotate-12 transition-transform" />
-                            Learning Library
-                          </button>
-                          
-                          <button 
-                            onClick={() => {
-                              const surpriseTopics = [
-                            "The Voynich Manuscript",
-                            "The Great Attractor",
-                            "Panpsychism",
-                            "Strange Attractors in Chaos Theory",
-                            "The Geometry of Music",
-                            "Bioluminescence in the Deep Ocean",
-                            "The Overview Effect",
-                            "The Fermi Paradox",
-                            "The Antikythera Mechanism",
-                            "Quantum Entanglement",
-                            "Cybernetics in the Soviet Union",
-                            "The Library of Babel",
-                            "Fractals in Nature",
-                            "The Philosophy of Time",
-                            "Dark Matter vs Dark Energy",
-                            "Microbiome-Brain Connection",
-                            "The History of Zero"
-                          ];
-                          const randomTopic = surpriseTopics[Math.floor(Math.random() * surpriseTopics.length)];
-                          understandTopic(randomTopic);
-                        }}
-                        className="font-sans text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-[0.2em] px-12 py-10 transition-all border-4 shadow-[12px_12px_0_0_current] hover:translate-x-[-6px] hover:translate-y-[-6px] hover:shadow-[16px_16px_0_0_current] active:translate-x-0 active:translate-y-0 active:shadow-[6px_6px_0_0_current] bg-accent border-accent text-bg rounded-[2rem]"
-                      >
-                        Surprise me! →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-                </div>
-              </motion.div>
-            )}
+            </div>
+          </motion.section>
+        )}
           </AnimatePresence>
-          </div>
-        </section>
-      </main>
+
+          {/* VIEW: VAULT / INDEX */}
+          {showIndex && (
+            <motion.section 
+              key="view-index"
+              variants={viewVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="fixed inset-0 z-[80] bg-bg overflow-y-auto flex flex-col p-6 md:p-12 lg:px-24 lg:py-24"
+            >
+              <div className="max-w-7xl mx-auto w-full flex flex-col h-full">
+                <div className="mb-12 flex flex-col gap-8 border-b-4 border-current pb-12">
+                   <div className="flex flex-col md:flex-row items-center justify-between gap-8 text-ink">
+                      <h2 className="text-4xl md:text-6xl font-display font-black uppercase tracking-tighter">The Vault</h2>
+                      <button onClick={() => setShowIndex(false)} className="w-full md:w-auto font-mono text-[10px] md:text-sm uppercase tracking-widest font-black border-2 border-ink px-8 py-4 hover:bg-ink hover:text-bg transition-all rounded-xl">← Back</button>
+                   </div>
+                   <div className="flex flex-col md:flex-row gap-6">
+                     <div className="flex-1 relative">
+                       <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 opacity-40" />
+                       <input 
+                         type="text" 
+                         placeholder="Search Vault..." 
+                         value={indexSearch} 
+                         onChange={(e) => setIndexSearch(e.target.value)} 
+                         className="w-full bg-current/5 border-2 border-current/10 rounded-2xl py-5 pl-16 pr-6 font-mono text-sm uppercase tracking-widest font-black outline-none focus:border-accent transition-colors text-ink" 
+                       />
+                     </div>
+                   </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
+                  {savedUnderstandables.filter(ax => ax.concept.toLowerCase().includes(indexSearch.toLowerCase())).map((ax, i) => renderConceptCard(ax, i, "vault"))}
+                </div>
+              </div>
+            </motion.section>
+          )}
+
+          {/* Fallback for Errors / Empty (keeping outside unified for now as error state) */}
+          {!result && !showIndex && !showLibrary && !showDiscovery && error && (
+            <div className="fixed inset-0 z-[100] bg-bg flex flex-col items-center justify-center p-10 text-center">
+               <AlertTriangle className="w-16 h-16 text-red-500 mb-8" />
+               <h3 className="text-4xl font-display font-black uppercase mb-4">Error Encountered</h3>
+               <p className="text-xl font-serif italic text-ink/60 mb-12 max-w-md">{error}</p>
+               <button onClick={() => setError(null)} className="px-10 py-5 bg-ink text-bg rounded-2xl font-mono text-sm uppercase tracking-widest font-black hover:opacity-80">Close</button>
+            </div>
+          )}
+        </main>
 
       {/* FOOTER */}
         <footer className="px-16 py-12 flex justify-between items-center shrink-0 z-20 transition-all font-mono text-sm uppercase tracking-[0.4em] font-black bg-bg border-t border-border text-ink">
@@ -3082,6 +2927,7 @@ function UnderstandableEngine() {
               onSelectItem={(item, card) => {
                 setSelectedItem(item);
                 setSelectedCard(card);
+                setShowLibrary(false);
               }}
               showFeedback={() => setShowFeedback(true)}
             />

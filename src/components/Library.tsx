@@ -159,10 +159,10 @@ export const Library: React.FC<LibraryProps> = ({ onClose, onSelectItem, showFee
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-bg flex flex-col overflow-hidden"
+      className="fixed inset-0 z-[100] bg-bg text-ink flex flex-col overflow-hidden"
     >
       {/* Header */}
-      <header className="px-6 md:px-12 py-6 border-b border-border flex justify-between items-center bg-surface/50 backdrop-blur-xl shrink-0">
+      <header className="px-6 md:px-12 py-6 border-b border-border flex justify-between items-center bg-surface shrink-0">
         <div className="flex items-center gap-6">
           <button 
             onClick={selectedCategory ? () => setSelectedCategory(null) : onClose}
@@ -202,29 +202,44 @@ export const Library: React.FC<LibraryProps> = ({ onClose, onSelectItem, showFee
       {/* Content */}
       <main className="flex-1 overflow-y-auto p-6 md:p-12 custom-scrollbar">
         <div className="max-w-7xl mx-auto w-full">
-          {!selectedCategory && !searchQuery ? (
-            /* Category Grid */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat)}
-                  className="group flex flex-col p-10 bg-surface border-4 border-border rounded-[3rem] hover:border-accent hover:-translate-y-2 transition-all text-left shadow-[12px_12px_0_0_rgba(0,0,0,0.02)]"
-                >
-                  <div className="w-16 h-16 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                    {cat.icon === 'Cpu' ? <Cpu size={32} /> : <Code2 size={32} />}
-                  </div>
-                  <h3 className="text-2xl font-black uppercase tracking-tight mb-3 group-hover:text-accent transition-colors">{cat.name}</h3>
-                  <p className="text-ink/60 text-sm leading-relaxed mb-8">{cat.description}</p>
-                  <div className="mt-auto flex items-center justify-between">
-                    <span className="font-mono text-[10px] uppercase tracking-widest opacity-40">
-                      {items.filter(it => it.categoryId === cat.id).length} Concepts
-                    </span>
-                    <ChevronRight size={20} className="opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all text-accent" />
-                  </div>
-                </button>
-              ))}
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-40 gap-6">
+               <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+               <p className="font-mono text-sm uppercase tracking-[0.4em] font-black animate-pulse">Syncing Knowledge Nodes...</p>
             </div>
+          ) : !selectedCategory && !searchQuery ? (
+            /* Category Grid */
+            <>
+              {categories.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat)}
+                      className="group flex flex-col p-10 bg-surface border-4 border-border rounded-[3rem] hover:border-accent hover:-translate-y-2 transition-all text-left shadow-[12px_12px_0_0_rgba(0,0,0,0.02)]"
+                    >
+                      <div className="w-16 h-16 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                        {cat.icon === 'Cpu' ? <Cpu size={32} /> : <Code2 size={32} />}
+                      </div>
+                      <h3 className="text-2xl font-black uppercase tracking-tight mb-3 group-hover:text-accent transition-colors">{cat.name}</h3>
+                      <p className="text-ink/60 text-sm leading-relaxed mb-8">{cat.description}</p>
+                      <div className="mt-auto flex items-center justify-between">
+                        <span className="font-mono text-[10px] uppercase tracking-widest opacity-40">
+                          {items.filter(it => it.categoryId === cat.id).length} Concepts
+                        </span>
+                        <ChevronRight size={20} className="opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all text-accent" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-40 opacity-40 text-center">
+                   <BookOpen size={64} className="mb-8" />
+                   <h3 className="text-3xl font-display font-black uppercase mb-4">Library Empty</h3>
+                   <p className="font-mono text-sm uppercase tracking-widest max-w-sm">No structured categories found in the core index.</p>
+                </div>
+              )}
+            </>
           ) : (
             /* Item List */
             <div className="flex flex-col gap-6">
