@@ -31,16 +31,20 @@
       "required": ["concept", "payload", "createdAt"]
     },
     "GlobalTopic": {
-      "title": "Global Topic",
-      "description": "Aggregated data for a unique concept",
+      "title": "Vault Concept",
+      "description": "The system-level record of a unique concept",
       "type": "object",
       "properties": {
-        "concept": { "type": "string" },
+        "id": { "type": "string" },
+        "concept": { "type": "string", "description": "The literal title provided by the first user" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "relationships": { "type": "array", "items": { "type": "string" } },
         "rank": { "type": "number" },
         "lastPayload": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["concept", "rank"]
+      "required": ["id", "concept", "rank", "createdAt", "updatedAt"]
     },
     "CommunityVote": {
       "title": "Community Vote",
@@ -53,16 +57,132 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["contentHash", "ups", "downs"]
+    },
+    "AxiomVault": {
+      "title": "Axiom Vault",
+      "description": "The global index of user-affirmed explanations",
+      "type": "object",
+      "properties": {
+        "concept": { "type": "string" },
+        "step": { "type": "number" },
+        "label": { "type": "string" },
+        "content": { "type": "string" },
+        "style": { "type": "string" },
+        "affirmationCount": { "type": "number" },
+        "lastAffirmed": { "type": "string", "format": "date-time" },
+        "domain": { "type": "string" },
+        "domainEmoji": { "type": "string" }
+      },
+      "required": ["concept", "step", "content", "affirmationCount"]
+    },
+    "ConceptCoupler": {
+      "title": "Concept Coupler",
+      "description": "A user's personal affirmation link to a concept",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "concept": { "type": "string" },
+        "step": { "type": "number" },
+        "label": { "type": "string" },
+        "content": { "type": "string" },
+        "learningStyle": { "type": "string" },
+        "domain": { "type": "string" },
+        "domainEmoji": { "type": "string" },
+        "breadcrumb": { "type": "string" },
+        "isAffirmed": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "concept", "step"]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User feedback and bug reports",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "message": { "type": "string" },
+        "context": { "type": "string", "description": "Page or slide where feedback was given" },
+        "topic": { "type": "string", "description": "Current active topic if any" },
+        "step": { "type": "number", "description": "Current step if any" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["message", "createdAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Top-level learning categories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "name"]
+    },
+    "Item": {
+      "title": "Item",
+      "description": "Specific concept nodes within a category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "title": { "type": "string" },
+        "shortDescription": { "type": "string" },
+        "icon": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "categoryId", "title"]
+    },
+    "IndexCard": {
+      "title": "Index Card",
+      "description": "Expanded learning content for an item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "itemId": { "type": "string" },
+        "explanation": { "type": "string" },
+        "examples": { "type": "array", "items": { "type": "string" } },
+        "walkthrough": { "type": "array", "items": { "type": "string" } },
+        "relatedItems": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "itemId", "explanation"]
     }
   },
   "firestore": {
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Top-level curriculum categories"
+    },
+    "/items/{itemId}": {
+      "schema": "Item",
+      "description": "Specific concept nodes"
+    },
+    "/index_cards/{cardId}": {
+      "schema": "IndexCard",
+      "description": "Full explanations for items"
+    },
+    "/feedback/{feedbackId}": {
+      "schema": "Feedback",
+      "description": "Collection for user bug reports and general feedback"
+    },
     "/users/{uid}": {
       "schema": "User",
-      "description": "User profiles"
+      "description": "User profiles and learning preferences"
     },
     "/global_index/{conceptId}": {
       "schema": "GlobalTopic",
       "description": "Global ranking system for concept auto-suggestions"
+    },
+    "/axiom_vault/{axiomId}": {
+      "schema": "AxiomVault",
+      "description": "The source of truth for high-quality, community-affirmed explanations"
+    },
+    "/concept_couplers/{couplerId}": {
+      "schema": "ConceptCoupler",
+      "description": "Personal ledger of user-affirmed concepts and their constituent axioms"
     },
     "/saved_topics/{topicId}": {
       "schema": "UnderstandablePayload",

@@ -63,9 +63,38 @@ service cloud.firestore {
              data.updatedAt == request.time;
     }
 
+    function isValidCoupler(data) {
+      return data.uid == request.auth.uid &&
+             data.concept is string &&
+             data.step is int &&
+             data.content is string &&
+             data.timestamp == request.time;
+    }
+
+    function isValidAxiomVault(data) {
+      return data.concept is string &&
+             data.step is int &&
+             data.affirmationCount is int &&
+             data.content is string;
+    }
+
     // ===============================================================
     // 3. Collection Rules
     // ===============================================================
+
+    match /axiom_vault/{axiomId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidAxiomVault(incoming());
+      allow update: if isSignedIn() && isValidAxiomVault(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['affirmationCount', 'lastAffirmed']);
+    }
+
+    match /concept_couplers/{couplerId} {
+      allow read, write: if isSignedIn() && (
+        (request.method == 'create' && incoming().uid == request.auth.uid) ||
+        (resource != null && resource.data.uid == request.auth.uid)
+      );
+    }
 
     match /_internal_/connection_test {
       allow read: if true;
@@ -100,13 +129,44 @@ service cloud.firestore {
 
     match /global_index/{conceptId} {
       allow read: if true;
-      allow write: if true; // Democratic ranking
+      allow write: if isSignedIn() && isValidGlobal(incoming());
     }
 
     match /community_votes/{voteId} {
       allow read: if true;
       allow create: if isValidVote(incoming());
       allow update: if isValidVote(incoming());
+    }
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn() && 
+                    incoming().concept is string && 
+                    incoming().concept.size() <= 500 &&
+                    incoming().uid == request.auth.uid &&
+                    incoming().createdAt == request.time;
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if (incoming().uid == null || incoming().uid == request.auth.uid) &&
+                    incoming().message is string &&
+                    incoming().message.size() <= 5000 &&
+                    incoming().createdAt == request.time;
+      allow read: if false; // Only admins or via console
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if false; // Seeding happens via console or specially authorized logic
+    }
+
+    match /items/{itemId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /index_cards/{cardId} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }

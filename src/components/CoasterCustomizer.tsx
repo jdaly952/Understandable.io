@@ -17,10 +17,23 @@ export default function CoasterCustomizer({ concept, understandableData, onClose
   const price = tier === 'standard' ? 59.99 : 89.99;
   const leadTime = tier === 'standard' ? '1 WEEK' : '2 WEEKS';
 
-  const handleCheckout = () => {
-    // In the future this wraps standard/custom shape data and routes to backend.
-    // For now, routing to the user's Stripe checkout link.
-    window.location.href = "https://buy.stripe.com/fZu3cv65L558eAH5WF6kg03";
+  const handleCheckout = async () => {
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ concept })
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || "Failed to initiate checkout");
+      }
+    } catch (err: any) {
+      console.error("Checkout failed:", err);
+      alert("Checkout initialization failed. Please ensure Stripe is configured.");
+    }
   };
 
   const getMaterialPreviewStyle = () => {
@@ -195,7 +208,7 @@ export default function CoasterCustomizer({ concept, understandableData, onClose
                   Ships in: {leadTime}
                 </div>
               </div>
-              <div className="font-serif text-6xl tracking-tighter font-black">
+              <div className="font-serif text-4xl md:text-6xl tracking-tighter font-black">
                 ${price}
               </div>
             </section>
@@ -216,63 +229,63 @@ export default function CoasterCustomizer({ concept, understandableData, onClose
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-16 mb-20">
                 
                 {/* Coaster 1: State A */}
-                <div className={`border-2 overflow-hidden p-8 md:p-12 flex items-center justify-center relative transition-all duration-700 shadow-2xl
+                <div className={`border-2 overflow-hidden p-6 md:p-12 flex items-center justify-center relative transition-all duration-700 shadow-2xl
                   ${getShapePreviewStyle()} ${getMaterialPreviewStyle()}
                 `}>
-                  <span className="absolute top-4 md:top-6 right-4 md:right-6 font-mono text-xs md:text-sm opacity-60 font-black">01</span>
-                  <div className="text-center px-4">
-                    <div className="font-mono text-[10px] md:text-sm uppercase tracking-[0.2em] mb-4 md:mb-6 font-black underline underline-offset-4 md:underline-offset-8 decoration-accent">
+                  <span className="absolute top-3 md:top-6 right-3 md:right-6 font-mono text-xs md:text-sm opacity-60 font-black">01</span>
+                  <div className="text-center px-2 md:px-4">
+                    <div className="font-mono text-[9px] md:text-sm uppercase tracking-[0.2em] mb-4 md:mb-6 font-black underline underline-offset-4 md:underline-offset-8 decoration-accent">
                       {understandableData.axis1?.labelA || "Axis 1 // Success"}
                     </div>
-                    <div className="font-serif text-sm md:text-xl leading-relaxed italic opacity-100 line-clamp-6 font-medium">
+                    <div className="font-serif text-xs md:text-xl leading-relaxed italic opacity-100 line-clamp-6 font-medium">
                       "{understandableData.axis1?.stateA || understandableData.stateA}"
                     </div>
                   </div>
                 </div>
 
                 {/* Coaster 2: State B */}
-                <div className={`border-2 overflow-hidden p-8 md:p-12 flex items-center justify-center relative transition-all duration-700 shadow-2xl
+                <div className={`border-2 overflow-hidden p-6 md:p-12 flex items-center justify-center relative transition-all duration-700 shadow-2xl
                   ${getShapePreviewStyle()} ${getMaterialPreviewStyle()}
                 `}>
-                  <span className="absolute top-4 md:top-6 right-4 md:right-6 font-mono text-xs md:text-sm opacity-60 font-black">02</span>
-                  <div className="text-center px-4">
-                    <div className="font-mono text-[10px] md:text-sm uppercase tracking-[0.2em] mb-4 md:mb-6 font-black underline underline-offset-4 md:underline-offset-8 decoration-accent">
+                  <span className="absolute top-3 md:top-6 right-3 md:right-6 font-mono text-xs md:text-sm opacity-60 font-black">02</span>
+                  <div className="text-center px-2 md:px-4">
+                    <div className="font-mono text-[9px] md:text-sm uppercase tracking-[0.2em] mb-4 md:mb-6 font-black underline underline-offset-4 md:underline-offset-8 decoration-accent">
                       {understandableData.axis1?.labelB || "Axis 1 // Struggle"}
                     </div>
-                    <div className="font-serif text-sm md:text-xl leading-relaxed italic opacity-100 line-clamp-6 font-medium">
+                    <div className="font-serif text-xs md:text-xl leading-relaxed italic opacity-100 line-clamp-6 font-medium">
                       "{understandableData.axis1?.stateB || understandableData.stateB}"
                     </div>
                   </div>
                 </div>
 
                 {/* Coaster 3: Zenith */}
-                <div className={`border-4 overflow-hidden p-8 md:p-12 flex items-center justify-center relative transition-all duration-700 shadow-[0_40px_80px_rgba(255,255,255,0.1)]
+                <div className={`border-4 overflow-hidden p-6 md:p-12 flex items-center justify-center relative transition-all duration-700 shadow-[0_40px_80px_rgba(255,255,255,0.1)]
                   ${getShapePreviewStyle()} ${getMaterialPreviewStyle()}
                 `}>
-                  <span className="absolute top-4 md:top-6 right-4 md:right-6 font-mono text-xs md:text-sm opacity-80 font-black">03</span>
-                  <div className="text-center px-4">
-                    <div className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] mb-4 md:mb-6 font-black underline underline-offset-4 md:underline-offset-8 decoration-accent">
+                  <span className="absolute top-3 md:top-6 right-3 md:right-6 font-mono text-xs md:text-sm opacity-80 font-black">03</span>
+                  <div className="text-center px-2 md:px-4">
+                    <div className="font-mono text-[9px] md:text-xs uppercase tracking-[0.2em] mb-4 md:mb-6 font-black underline underline-offset-4 md:underline-offset-8 decoration-accent">
                       Axis 3 // Zenith
                     </div>
-                    <div className="font-serif text-lg md:text-3xl leading-relaxed font-black">
+                    <div className="font-serif text-base md:text-3xl leading-relaxed font-black">
                       {understandableData.axis3?.zenith || understandableData.zenith}
                     </div>
                   </div>
                 </div>
 
                 {/* Coaster 4: Concept */}
-                <div className={`border-2 overflow-hidden p-8 md:p-12 flex items-center justify-center relative transition-all duration-700 shadow-2xl
+                <div className={`border-2 overflow-hidden p-6 md:p-12 flex items-center justify-center relative transition-all duration-700 shadow-2xl
                   ${getShapePreviewStyle()} ${getMaterialPreviewStyle()}
                 `}>
-                  <span className="absolute top-4 md:top-6 right-4 md:right-6 font-mono text-xs md:text-sm opacity-60 font-black">04</span>
-                  <div className="text-center w-full px-4">
-                    <div className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] mb-4 md:mb-6 font-black">
+                  <span className="absolute top-3 md:top-6 right-3 md:right-6 font-mono text-xs md:text-sm opacity-60 font-black">04</span>
+                  <div className="text-center w-full px-2 md:px-4">
+                    <div className="font-mono text-[9px] md:text-xs uppercase tracking-[0.2em] mb-4 md:mb-6 font-black">
                       Anchor Point
                     </div>
-                    <div className="font-serif text-2xl md:text-5xl uppercase tracking-tighter break-words font-black">
+                    <div className="font-serif text-xl md:text-5xl uppercase tracking-tighter break-words font-black">
                       {concept}
                     </div>
-                    <div className="mt-4 md:mt-8 pt-4 md:pt-8 border-t-2 border-current/20 font-mono text-xs md:text-sm uppercase tracking-widest font-black text-accent">
+                    <div className="mt-4 md:mt-8 pt-4 md:pt-8 border-t-2 border-current/20 font-mono text-[10px] md:text-sm uppercase tracking-widest font-black text-accent">
                       {understandableData.domainEmoji} {understandableData.domain}
                     </div>
                   </div>

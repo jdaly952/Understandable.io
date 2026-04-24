@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyAIz_lkfpbthiLRc9WO8beb31LemYSyIX8",
   authDomain: "gen-lang-client-0155880326.firebaseapp.com",
   projectId: "gen-lang-client-0155880326",
@@ -69,8 +69,16 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  let message = error instanceof Error ? error.message : String(error);
+  
+  // Specific guidance for "offline" error which usually means domain/config mismatch
+  if (message.includes('the client is offline')) {
+    const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    message = `FIREBASE ENGINE: Connection Failed. Your current domain (${currentDomain}) might not be in the 'Authorized Domains' list in your Firebase project. Please add it at: https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/settings`;
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: message,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
