@@ -14,7 +14,6 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, title, 
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          key={`legal-modal-${type}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

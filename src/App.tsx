@@ -3,10 +3,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { auth, db, handleFirestoreError, OperationType, testFirebaseConnection, firebaseConfig } from "./firebase";
 import CoasterCustomizer from "./components/CoasterCustomizer";
 import { LegalModal } from "./components/LegalModals";
-import { FeedbackModal } from "./components/FeedbackModal";
-import { Library } from "./components/Library";
-import { IndexCard } from "./components/IndexCard";
-import { Item, IndexCard as IndexCardType } from "./types";
 
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -17,17 +13,12 @@ const generateUUID = () => {
 
 const getOrCreateSessionId = () => {
   if (typeof window !== "undefined") {
-    try {
-      let sid = window.localStorage.getItem("understandable_session_id");
-      if (!sid) {
-        sid = generateUUID();
-        window.localStorage.setItem("understandable_session_id", sid);
-      }
-      return sid;
-    } catch (e) {
-      console.warn("localStorage unavailable, using ephemeral session ID.");
-      return generateUUID();
+    let sid = localStorage.getItem("understandable_session_id");
+    if (!sid) {
+      sid = generateUUID();
+      localStorage.setItem("understandable_session_id", sid);
     }
+    return sid;
   }
   return "server-session";
 };
@@ -57,10 +48,9 @@ import {
   onSnapshot,
   increment,
   arrayUnion,
-  limit,
-  getDocs
+  limit
 } from "firebase/firestore";
-import { Shield, Save, CheckCircle2, AlertCircle, AlertTriangle, LogIn, ChevronLeft, Trash2, Download, ArrowRight, RotateCcw, Mail, Volume2, VolumeX, Loader2, Sparkles, Rocket, Heart, Smile, Lightbulb, Cloud, Telescope, Ghost, CircleDashed, Search, LayoutDashboard, Globe, HelpCircle, LogOut, BookOpen, Settings, Plus, Share2, Zap, Dice5, MessageSquare } from "lucide-react";
+import { Shield, Save, CheckCircle2, AlertCircle, AlertTriangle, LogIn, ChevronLeft, Trash2, Download, ArrowRight, RotateCcw, Mail, Volume2, VolumeX, Loader2, Sparkles, Rocket, Heart, Smile, Lightbulb, Cloud, Telescope, Ghost, CircleDashed, Search, LayoutDashboard, Globe, HelpCircle, LogOut, BookOpen, Settings, Plus, Share2, Zap, Dice5 } from "lucide-react";
 import { GoogleGenAI, Modality } from "@google/genai";
 import { SYSTEM_PROMPT } from "./prompt";
 
@@ -445,36 +435,36 @@ const ELI9Card = ({ content }: { content?: string }) => {
     <div className="mt-8 mb-4">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-4 p-2 pr-6 rounded-full border transition-all hover:bg-accent/[0.02]
+        className={`flex items-center gap-4 p-2 pr-6 rounded-full border-2 transition-all hover:-translate-y-0.5 active:translate-y-0
           ${isOpen 
-            ? 'bg-accent/[0.03] border-accent/20 text-accent' 
+            ? 'bg-accent/5 border-accent/20 text-accent' 
             : 'bg-surface border-border text-ink opacity-60 hover:opacity-100'}
+          shadow-[4px_4px_0_0_rgba(0,0,0,0.02)]
         `}
       >
-        <div className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center ${isOpen ? 'bg-accent/20' : 'bg-black/5'}`}>
-           <Heart className="w-3 h-3 md:w-3.5 md:h-3.5" />
+        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center ${isOpen ? 'bg-accent/20' : 'bg-black/5'}`}>
+           <Heart className="w-3 h-3 md:w-4 md:h-4" />
         </div>
-        <div className="flex flex-col items-start leading-none gap-0.5">
-          <span className="font-sans text-xs md:text-sm font-bold">Simplified Perspective</span>
-          <span className="text-[9px] font-mono uppercase tracking-[0.1em] opacity-50">{isOpen ? 'Back' : 'Distill'}</span>
+        <div className="flex flex-col items-start leading-none gap-1">
+          <span className="font-serif italic text-xs md:text-sm font-bold">Simple Essence</span>
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] opacity-80">{isOpen ? 'Closing' : 'View Distillation'}</span>
         </div>
       </button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            key="eli9-content"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="mt-4 overflow-hidden rounded-2xl border border-accent/10 bg-accent/[0.01]"
+            className="mt-6 overflow-hidden rounded-[2.5rem] border border-accent/20 bg-accent/[0.02]"
           >
-            <div className="p-8 md:p-10">
-                <div className="flex items-center justify-between mb-6">
-                  <SectionLabel className="!text-sm font-mono uppercase tracking-widest opacity-40">Core Essence</SectionLabel>
+            <div className="p-8 md:p-12">
+                <div className="flex items-center justify-between mb-8">
+                  <SectionLabel className="!text-lg">Core Distillation</SectionLabel>
                   <UnderstandableVoice text={content} />
                 </div>
-               <p className="text-xl md:text-3xl font-sans font-medium leading-relaxed text-pretty text-accent">
+               <p className="text-xl md:text-4xl font-serif italic font-semibold leading-relaxed text-pretty text-accent">
                  {content}
                </p>
             </div>
@@ -503,7 +493,6 @@ const AhaSparkle = ({ active, status, concept }: { active: boolean, status: "lin
   <AnimatePresence>
     {active && (
       <motion.div
-        key="aha-sparkle-container"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -511,7 +500,6 @@ const AhaSparkle = ({ active, status, concept }: { active: boolean, status: "lin
       >
         {/* Background Flash */}
         <motion.div 
-          key="sparkle-flash"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: [0, 0.4, 0], scale: [0.8, 1.5] }}
           transition={{ duration: 1.2 }}
@@ -537,38 +525,43 @@ const AhaSparkle = ({ active, status, concept }: { active: boolean, status: "lin
 
         {/* Success Modal */}
         <motion.div
-          key="sparkle-success-modal"
-          initial={{ y: 100, opacity: 0, scale: 0.95 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: -100, opacity: 0, scale: 1.05 }}
-          transition={{ type: "spring", damping: 15, stiffness: 120 }}
-          className="bg-bg border border-border p-6 md:p-14 rounded-[2.5rem] md:rounded-[3rem] shadow-2xl flex flex-col items-center gap-6 md:gap-8 text-center z-[101] max-w-xl mx-4"
+          initial={{ y: 100, opacity: 0, scale: 0.5, rotate: -5 }}
+          animate={{ y: 0, opacity: 1, scale: 1, rotate: 0 }}
+          exit={{ y: -100, opacity: 0, scale: 1.2 }}
+          transition={{ type: "spring", damping: 12, stiffness: 100 }}
+          className="bg-bg border-8 border-current p-10 md:p-16 rounded-[4rem] shadow-[40px_40px_0_0_rgba(0,0,0,0.1)] flex flex-col items-center gap-8 text-center z-[101] max-w-xl mx-4"
         >
           <div className="relative">
-            <div className="w-12 h-12 md:w-20 md:h-20 bg-accent text-bg rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
-              {status === 'new_discovery' ? <Rocket className="w-6 h-6 md:w-8 md:h-8" /> : <Sparkles className="w-6 h-6 md:w-8 md:h-8" />}
+            <div className="w-24 h-24 md:w-32 md:h-32 bg-accent rounded-full flex items-center justify-center text-bg shadow-[0_0_50px_rgba(74,103,65,0.6)] animate-pulse">
+              {status === 'new_discovery' ? <Rocket size={48} /> : <Sparkles size={48} />}
             </div>
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+              className="absolute -inset-4 border-2 border-dashed border-accent rounded-full opacity-30"
+            />
           </div>
 
           <div className="flex flex-col gap-2">
-            <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] font-bold opacity-30 italic">Perspective Inducted</span>
-            <h2 className="font-display text-4xl md:text-5xl font-medium tracking-tight text-ink leading-tight">
-              Understanding Locked In
+            <span className="font-mono text-[10px] md:text-sm uppercase tracking-[0.6em] font-black italic opacity-40">Cognitive Mastery Achieved</span>
+            <h2 className="font-display text-4xl md:text-7xl font-black uppercase tracking-tighter text-ink leading-tight">
+              Understanding locked in!
             </h2>
+            <div className="h-2 w-24 bg-accent mx-auto rounded-full mt-4" />
           </div>
 
-          <p className="font-sans font-medium text-xl md:text-2xl opacity-60 leading-relaxed max-w-sm">
+          <p className="font-serif italic text-2xl md:text-3xl opacity-80 leading-relaxed max-w-sm">
             "{concept}"
           </p>
 
           {status === 'new_discovery' && (
             <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="font-mono text-[9px] uppercase tracking-widest text-accent bg-accent/5 px-6 py-3 rounded-xl border border-accent/10"
+              className="font-mono text-[10px] md:text-xs uppercase tracking-widest text-accent bg-accent/10 px-8 py-4 rounded-full border-2 border-accent/20"
             >
-              Synchronized with the global index
+              Added to the Global Index — thanks for contributing to the community!
             </motion.div>
           )}
 
@@ -839,11 +832,6 @@ function UnderstandableEngine() {
   const [showAccount, setShowAccount] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [showLibrary, setShowLibrary] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [selectedCard, setSelectedCard] = useState<IndexCardType | null>(null);
   const [reportingConcept, setReportingConcept] = useState<string | null>(null);
   const [indexType, setIndexType] = useState<"personal" | "global">("personal");
   const [indexSearch, setIndexSearch] = useState("");
@@ -860,12 +848,6 @@ function UnderstandableEngine() {
   const [affirmationStatus, setAffirmationStatus] = useState<"linked" | "new_discovery" | null>(null);
   const [streak, setStreak] = useState(0);
   const [anotherExampleIndex, setAnotherExampleIndex] = useState(0);
-  const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
-
-  const setViewStep = (newStep: number) => {
-    setDirection(newStep >= axiomStep ? 1 : -1);
-    setAxiomStep(newStep);
-  };
 
   const recordStepProgress = async (step: number) => {
     if (!result || !user) return;
@@ -908,70 +890,13 @@ function UnderstandableEngine() {
         affirmationCount: increment(1),
         lastAffirmed: serverTimestamp(),
         domain: result.domain,
-        domainEmoji: result.domainEmoji,
-        whyItMatters: result.whyItMatters || ""
+        domainEmoji: result.domainEmoji
       }, { merge: true });
 
     } catch (err) {
       console.warn("Step progress logging failed", err);
     }
   };
-
-  const seedCategories = async () => {
-    try {
-      const catsRef = collection(db, "categories");
-      const snap = await getDocs(catsRef);
-      if (snap.empty) {
-        console.log("Seeding categories...");
-        const cats = [
-          { id: 'dev-mastery', name: 'Software Mastery', description: 'Deep dives into engineering concepts.', icon: 'Code2', order: 1 },
-          { id: 'math-physics', name: 'Mathematics & Physics', description: 'The laws governing reality.', icon: 'Cpu', order: 2 },
-          { id: 'sys-design', name: 'System Architecture', description: 'The blueprint of robust pipelines.', icon: 'Layers', order: 3 },
-          { id: 'cognitive-sci', name: 'Cognitive Science', description: 'Understanding the human mind.', icon: 'Lightbulb', order: 4 },
-          { id: 'art-history', name: 'Art & History', description: 'The evolution of human expression.', icon: 'Code2', order: 5 }
-        ];
-        for (const cat of cats) {
-          await setDoc(doc(db, "categories", cat.id), cat);
-        }
-      }
-    } catch (err) {
-      console.warn("Category seeding failed", err);
-    }
-  };
-
-  const migrateSavedTopics = async () => {
-    if (!user) return;
-    try {
-      const oldTopicsRef = collection(db, "saved_topics");
-      const q = query(oldTopicsRef, where("uid", "==", user.uid));
-      const snap = await getDocs(q);
-      
-      if (!snap.empty) {
-        console.log("Migrating saved topics...");
-        const promises = snap.docs.map(oldDoc => {
-          const oldData = oldDoc.data();
-          const slug = oldData.concept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-          const vaultRef = doc(db, "users", user.uid, "vault", slug);
-          return setDoc(vaultRef, {
-            id: slug,
-            userId: user.uid,
-            conceptId: slug,
-            explanationId: "migrated",
-            conceptTitle: oldData.concept,
-            savedAt: oldData.createdAt || serverTimestamp()
-          });
-        });
-        await Promise.all(promises);
-        console.log("Migration complete.");
-      }
-    } catch (err) {
-      console.warn("Migration failed", err);
-    }
-  };
-
-  useEffect(() => {
-    seedCategories();
-  }, [db]);
 
   const lockInTruth = async () => {
     if (!result || !user) return;
@@ -982,42 +907,45 @@ function UnderstandableEngine() {
         window.navigator.vibrate(50);
       }
 
-      const slug = concept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-      const conceptRef = doc(db, "concepts", slug);
-      const explanationId = generateUUID();
-      const expRef = doc(db, "concepts", slug, "explanations", explanationId);
-      const vaultRef = doc(db, "users", user.uid, "vault", slug);
+      // Final step is 5 (Identity Anchor)
+      await recordStepProgress(5);
 
-      const promises: any[] = [
-        setDoc(conceptRef, {
-          rank: increment(5),
-          updatedAt: serverTimestamp()
-        }, { merge: true }),
-        setDoc(expRef, {
-          id: explanationId,
-          conceptId: slug,
-          userId: user.uid,
-          payload: result,
-          learningStyle,
-          votes: { ups: 0, downs: 0 },
-          createdAt: serverTimestamp()
-        }),
-        setDoc(vaultRef, {
-          id: slug,
-          userId: user.uid,
-          conceptId: slug,
-          explanationId: explanationId,
-          conceptTitle: concept,
-          savedAt: serverTimestamp()
-        }),
-        setDoc(doc(db, "users", user.uid), {
-          lastActive: serverTimestamp()
-        }, { merge: true }),
-      ];
+      // Global Indexing & Discovery Detection - SELF-REGULATING VAULT LOGIC
+      const conceptId = concept.toLowerCase().trim().replace(/\s+/g, '_');
+      const indexRef = doc(db, "global_index", conceptId);
+      const indexSnap = await getDoc(indexRef);
+      
+      const tags = Array.isArray(result.tags) ? result.tags : [];
+      const relationships = Array.isArray(result.relatedConcepts) ? result.relatedConcepts : [];
 
-      await Promise.all(promises);
+      const conceptPayload: any = {
+        id: conceptId,
+        rank: increment(1),
+        affirmationCount: increment(1),
+        updatedAt: serverTimestamp(),
+        lastPayload: result,
+      };
 
-      setAffirmationStatus("linked");
+      // Add tags and relationships if they exist
+      if (tags.length > 0) conceptPayload.tags = arrayUnion(...tags);
+      if (relationships.length > 0) conceptPayload.relationships = arrayUnion(...relationships);
+
+      if (!indexSnap.exists()) {
+        // Core Behavior: Preserve exact literal title on creation
+        conceptPayload.concept = concept; 
+        conceptPayload.createdAt = serverTimestamp();
+        conceptPayload.domain = result.domain || "General";
+        conceptPayload.domainEmoji = result.domainEmoji || "🧠";
+        
+        await setDoc(indexRef, conceptPayload);
+        setAffirmationStatus("new_discovery");
+      } else {
+        // Vault Logic: Consolidation & Merging while preserving original title
+        // We do NOT include 'concept' here to ensure the original title is preserved exactly
+        await setDoc(indexRef, conceptPayload, { merge: true });
+        setAffirmationStatus("linked");
+      }
+
       setSaveSuccess(true);
       setShowSparkle(true);
 
@@ -1158,17 +1086,17 @@ function UnderstandableEngine() {
     });
     
     // Filter out things the user already has
-    const userConcepts = new Set(savedUnderstandables.map(s => (s.concept || "").toLowerCase().trim()));
+    const userConcepts = new Set(savedUnderstandables.map(s => s.concept.toLowerCase().trim()));
     
     const selected: any[] = [];
     const count = 4;
     
     // Pick from vault first if available AND NOT SAVED
     const availableVault = [...vaultSuggestions]
-        .filter(v => !userConcepts.has((v.concept || "").toLowerCase().trim()))
+        .filter(v => !userConcepts.has(v.concept.toLowerCase().trim()))
         .sort(() => Math.random() - 0.5);
     
-    for (let i = 0; i < 2 && availableVault.length > 0; i++) {
+    for (let i = 0; i < Math.min(2, availableVault.length); i++) {
         const item = availableVault.pop();
         if (item) selected.push({ concept: item.concept, isVault: true });
     }
@@ -1176,7 +1104,7 @@ function UnderstandableEngine() {
     // Fill remaining with random from combined AND NOT SAVED
     const remainingCount = count - selected.length;
     const pool = combined.filter(c => 
-        !selected.find(s => (s.concept || "").toLowerCase().trim() === c.toLowerCase().trim()) && 
+        !selected.find(s => s.concept.toLowerCase().trim() === c.toLowerCase().trim()) && 
         !userConcepts.has(c.toLowerCase().trim())
     );
     
@@ -1193,67 +1121,11 @@ function UnderstandableEngine() {
     refreshSuggestions();
   }, [globalLogs, vaultSuggestions, savedUnderstandables]);
 
-  const renderConceptCard = (ax: any, i: number, group: string, layout: "card" | "row" = "card") => {
-    // Rely on id or concept for uniqueness.
-    const id = ax.id || ax.concept || ax.payload?.id || ax.payload?.title || "no-id";
-    const uniqueKey = `axon-${group}-${layout}-${id}-${i}`;
+  const renderConceptCard = (ax: any, i: number, group: string) => {
+    const conceptId = ax.id || ax.concept;
+    const uniqueKey = `card-${group}-${conceptId}-${indexType}-${i}`;
     const tags = ax.tags || ax.payload?.tags || [];
     const relationships = ax.relationships || ax.payload?.relatedConcepts || [];
-
-    if (layout === "row") {
-      return (
-        <button
-          key={uniqueKey}
-          onClick={() => {
-            setResult(ax.payload || ax);
-            setConcept(ax.concept);
-            setShowIndex(false);
-            setAxiomStep(0);
-          }}
-          className="group relative flex items-center justify-between p-6 transition-all bg-bg border-b border-current/10 hover:border-current/30 hover:bg-current/5 text-left w-full"
-        >
-          <div className="flex items-center gap-6 flex-1 min-w-0">
-             <div className="hidden sm:flex w-12 h-12 shrink-0 bg-current/5 rounded-2xl items-center justify-center font-mono text-xl">
-               {ax.domainEmoji || "🌀"}
-             </div>
-             <div className="flex flex-col gap-1 min-w-0">
-               <div className="flex items-center gap-3">
-                 <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight group-hover:text-accent transition-colors truncate">
-                   {ax.concept}
-                 </h3>
-                 {ax.affirmationCount > 10 && (
-                   <span className="font-mono text-[8px] bg-accent/10 text-accent px-2 py-0.5 rounded-full font-bold uppercase shrink-0">Core</span>
-                 )}
-               </div>
-               <p className="text-sm opacity-60 font-sans italic truncate">
-                 "{(ax.payload?.zenith || ax.zenith || ax.payload?.hook || ax.hook || "Synthesis complete.")}"
-               </p>
-             </div>
-          </div>
-          
-          <div className="flex items-center gap-6 shrink-0 pl-6 border-l border-current/10">
-            {tags.length > 0 && (
-              <div className="hidden lg:flex gap-2">
-                {tags.slice(0, 2).map((tag: string, tagIdx: number) => (
-                  <span key={`${uniqueKey}-tag-${tag}-${tagIdx}`} className="font-mono text-[8px] uppercase tracking-widest border border-current/20 px-2 py-0.5 rounded-full opacity-60">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <div 
-                onClick={(e) => handleShare(e, ax)}
-                className={`p-2 cursor-pointer rounded-full transition-all ${copiedId === (ax.id || ax.concept) ? "text-green-500" : "text-current/40 hover:text-accent hover:bg-current/5"}`}
-              >
-                {copiedId === (ax.id || ax.concept) ? <span className="font-mono text-[8px] font-black">COPIED</span> : <Share2 className="w-4 h-4" />}
-              </div>
-              <ArrowRight className="w-5 h-5 text-accent opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
-            </div>
-          </div>
-        </button>
-      );
-    }
 
     return (
       <button
@@ -1264,48 +1136,48 @@ function UnderstandableEngine() {
           setShowIndex(false);
           setAxiomStep(0);
         }}
-        className="group relative flex flex-col p-8 md:p-10 transition-all bg-bg border border-border hover:border-accent text-left rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1"
+        className="group relative flex flex-col p-8 md:p-10 transition-all bg-bg border-2 md:border-4 border-current/5 hover:border-accent text-left rounded-[2rem] shadow-[10px_10px_0_0_rgba(0,0,0,0.02)] hover:shadow-[20px_20px_0_0_rgba(74,103,65,0.05)] hover:-translate-y-2 hover:-translate-x-2"
       >
         <div className="flex justify-between items-start mb-6">
-          <span className="font-mono text-[9px] opacity-20 uppercase tracking-widest font-bold">Node_{(i+1).toString().padStart(3, '0')}</span>
+          <span className="font-mono text-[10px] opacity-20 uppercase tracking-widest font-black">TRUTH_{(i+1).toString().padStart(3, '0')}</span>
           <div className="flex items-center gap-3">
-             <div 
-                onClick={(e) => handleShare(e, ax)}
-                className={`p-2 rounded-lg transition-all border cursor-pointer ${copiedId === (ax.id || ax.concept) ? "bg-green-500/20 border-green-500/50 text-green-500" : "bg-bg border-current/5 hover:border-accent text-accent"}`}
+             <button 
+               onClick={(e) => handleShare(e, ax)}
+               className={`p-2 rounded-lg transition-all border ${copiedId === (ax.id || ax.concept) ? "bg-green-500/20 border-green-500/50 text-green-500" : "bg-bg border-current/5 hover:border-accent text-accent"}`}
              >
-               {copiedId === (ax.id || ax.concept) ? <span className="font-mono text-[7px] font-bold">COPIED</span> : <Share2 className="w-3 h-3" />}
-             </div>
+               {copiedId === (ax.id || ax.concept) ? <span className="font-mono text-[8px] font-black">COPIED!</span> : <Share2 className="w-3 h-3" />}
+             </button>
              {indexType === 'global' && (
-               <div 
+               <button 
                  onClick={(e) => { e.stopPropagation(); setReportingConcept(ax.concept); }}
-                 className="p-2 rounded-lg transition-all border bg-bg border-current/5 hover:border-soft-red text-soft-red opacity-40 hover:opacity-100 cursor-pointer"
+                 className="p-2 rounded-lg transition-all border bg-bg border-current/5 hover:border-soft-red text-soft-red opacity-40 hover:opacity-100"
                  title="Report content"
                >
                  <AlertTriangle className="w-3 h-3" />
-               </div>
+               </button>
              )}
              {ax.affirmationCount > 10 && (
-               <span className="font-mono text-[8px] bg-accent/10 text-accent px-3 py-1 rounded-full font-bold border border-accent/20 uppercase">Core Node</span>
+               <span className="font-mono text-[8px] bg-accent/10 text-accent px-3 py-1 rounded-full font-bold border border-accent/20 uppercase">Core Pillar</span>
              )}
-             <span className="font-mono text-[8px] uppercase tracking-widest font-bold opacity-30 bg-current/5 px-2.5 py-1 rounded-full flex items-center gap-2">
+             <span className="font-mono text-[9px] uppercase tracking-widest font-black opacity-40 bg-current/5 px-3 py-1 rounded-full flex items-center gap-2">
                {ax.domainEmoji && <span>{ax.domainEmoji}</span>}
                {ax.domain || ax.payload?.domain || "General"}
              </span>
           </div>
         </div>
         
-        <h3 className="text-xl md:text-2xl font-medium tracking-tight mb-4 group-hover:text-accent transition-colors line-clamp-2 leading-tight">
+        <h3 className="text-xl md:text-3xl font-black uppercase tracking-tight mb-4 group-hover:text-accent transition-colors line-clamp-2 leading-none">
           {ax.concept}
         </h3>
         
-        <p className="text-sm opacity-50 font-sans leading-relaxed line-clamp-3 mb-6 flex-1">
+        <p className="text-sm md:text-base opacity-60 font-sans leading-relaxed line-clamp-3 mb-6 flex-1 italic">
           "{(ax.payload?.zenith || ax.zenith || ax.payload?.hook || ax.hook || "Synthesis complete.")}"
         </p>
 
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
             {tags.slice(0, 3).map((tag: string, tagIdx: number) => (
-              <span key={`${uniqueKey}-group-tag-${tag}-${tagIdx}`} className="font-mono text-[8px] uppercase tracking-widest border border-border px-2 py-0.5 rounded-full opacity-30 group-hover:opacity-100 group-hover:border-accent/40 transition-all">
+              <span key={`${tag}-${tagIdx}`} className="font-mono text-[8px] uppercase tracking-widest border border-current/10 px-2 py-0.5 rounded-full opacity-40 group-hover:opacity-100 group-hover:border-accent/40 transition-all">
                 #{tag}
               </span>
             ))}
@@ -1315,24 +1187,24 @@ function UnderstandableEngine() {
         {relationships.length > 0 && (
           <div className="mb-6 flex items-center gap-2 overflow-hidden">
              <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
-             <span className="font-mono text-[8px] uppercase tracking-widest opacity-20 whitespace-nowrap">Links: {relationships.join(", ")}</span>
+             <span className="font-mono text-[8px] uppercase tracking-widest opacity-30 whitespace-nowrap">Links to: {relationships.join(", ")}</span>
           </div>
         )}
 
-        {(ax.whyItMatters || ax.payload?.whyItMatters) && (
-          <div className="mb-8 p-6 bg-accent/[0.02] border-l-2 border-accent/30 rounded-r-xl">
-            <p className="font-mono text-[8px] uppercase tracking-[0.3em] font-bold opacity-20 mb-2 whitespace-nowrap">Context Analysis</p>
-            <p className="text-xs font-sans leading-relaxed opacity-60 italic line-clamp-2">{ax.whyItMatters || ax.payload?.whyItMatters}</p>
+        {ax.payload?.whyItMatters && (
+          <div className="mb-8 p-6 bg-accent/[0.03] border-l-4 border-accent rounded-r-2xl">
+            <p className="font-mono text-[9px] uppercase tracking-[0.3em] font-black opacity-30 mb-2 whitespace-nowrap">Impact Analysis</p>
+            <p className="text-xs md:text-sm font-sans leading-relaxed opacity-70 italic line-clamp-2">{ax.payload.whyItMatters}</p>
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-6 border-t border-border/40">
+        <div className="flex items-center justify-between pt-6 border-t border-current/5">
            <div className="flex gap-2">
-             {ax.payload?.axis1 && <div className="w-2.5 h-2.5 bg-green-500/20 rounded-full" />}
-             {ax.payload?.axis2 && <div className="w-2.5 h-2.5 bg-blue-500/20 rounded-full" />}
-             {ax.payload?.axis3 && <div className="w-2.5 h-2.5 bg-accent/20 rounded-full" />}
+             {ax.payload?.axis1 && <div className="w-3 h-3 bg-green-500/20 rounded-full" />}
+             {ax.payload?.axis2 && <div className="w-3 h-3 bg-blue-500/20 rounded-full" />}
+             {ax.payload?.axis3 && <div className="w-3 h-3 bg-accent/20 rounded-full" />}
            </div>
-           <ArrowRight className="w-4 h-4 text-accent opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
+           <ArrowRight className="w-5 h-5 text-accent opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
         </div>
       </button>
     );
@@ -1341,7 +1213,7 @@ function UnderstandableEngine() {
   // Handle Share functionality
   const handleShare = (e: React.MouseEvent, ax: any) => {
     e.stopPropagation();
-    const slug = ax.id || (ax.concept || "").toLowerCase().trim().replace(/[^a-z0-9]/gi, '_');
+    const slug = ax.id || ax.concept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_');
     const shareUrl = `${window.location.origin}${window.location.pathname}?concept=${slug}`;
     
     navigator.clipboard.writeText(shareUrl).then(() => {
@@ -1414,62 +1286,68 @@ function UnderstandableEngine() {
         unsubscribeGlobal = undefined;
       }
 
-      // Setup listener for global concepts
+      // Setup listener for global master topics (Public Vault)
       const qGlobal = query(
-        collection(db, "concepts"),
+        collection(db, "global_index"),
         orderBy("rank", "desc"),
         limit(50)
       );
       unsubscribeGlobal = onSnapshot(qGlobal, (snapshot) => {
         const docs = snapshot.docs.map(doc => {
           const data = doc.data();
+          // Normalize structure for the index view
           return {
             id: doc.id,
-            concept: data.title,
-            payload: data.lastExplanation,
+            concept: data.concept,
+            domain: data.lastPayload?.domain || "General",
+            payload: data.lastPayload,
             ...data
           };
         });
-        
         setGlobalLogs(docs);
       }, (err) => {
-        console.warn("Global concept vault currently awaiting server sync.");
+        console.warn("Global vault currently awaiting server sync.");
       });
 
-      // Trending Explanations Listener
+      // Vault Listener
       const qVault = query(
-        collection(db, "global_logs"),
-        orderBy("createdAt", "desc"),
+        collection(db, "axiom_vault"),
+        orderBy("affirmationCount", "desc"),
         limit(20)
       );
       const unsubscribeVault = onSnapshot(qVault, (snap) => {
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const docs = snap.docs.map(d => d.data());
         setVaultSuggestions(docs);
       });
 
       if (u) {
         // Sync user to Firestore
         const userRef = doc(db, "users", u.uid);
-        setDoc(userRef, {
-          uid: u.uid,
-          email: u.email,
-          displayName: u.displayName,
-          photoURL: u.photoURL,
-          lastActive: serverTimestamp()
-        }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${u.uid}`));
+        getDoc(userRef).then((docSnap) => {
+          if (!docSnap.exists()) {
+            setDoc(userRef, {
+              uid: u.uid,
+              email: u.email,
+              displayName: u.displayName,
+              photoURL: u.photoURL,
+              createdAt: serverTimestamp()
+            }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${u.uid}`));
+          }
+        }).catch(err => handleFirestoreError(err, OperationType.GET, `users/${u.uid}`));
 
-        // Setup real-time listener for user's personal vault
+        // Setup real-time listener for user's topics (Private)
         setLoadingIndex(true);
         const q = query(
-          collection(db, "users", u.uid, "vault"),
-          orderBy("savedAt", "desc")
+          collection(db, "saved_topics"),
+          where("uid", "==", u.uid),
+          orderBy("createdAt", "desc")
         );
         unsubscribeIndex = onSnapshot(q, (snapshot) => {
-          const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), concept: doc.data().conceptTitle }));
+          const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setSavedUnderstandables(docs);
           setLoadingIndex(false);
         }, (err) => {
-          handleFirestoreError(err, OperationType.LIST, "user_vault");
+          handleFirestoreError(err, OperationType.LIST, "saved_topics");
           setLoadingIndex(false);
         });
       } else {
@@ -1522,48 +1400,56 @@ function UnderstandableEngine() {
     setSaving(true);
     try {
       const slug = concept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-      const conceptRef = doc(db, "concepts", slug);
-      const explanationId = generateUUID();
-      const expRef = doc(db, "concepts", slug, "explanations", explanationId);
-      const vaultRef = doc(db, "users", user.uid, "vault", slug);
+      const globalRef = doc(db, "global_index", slug);
+      const globalSnap = await getDoc(globalRef);
+      const userPrefsRef = doc(db, "users", user.uid);
+      
+      const tags = Array.isArray(result.tags) ? result.tags : [];
+      const relationships = Array.isArray(result.relatedConcepts) ? result.relatedConcepts : [];
+
+      const globalPayload: any = {
+        id: slug,
+        rank: increment(10),
+        lastPayload: result,
+        updatedAt: serverTimestamp()
+      };
+
+      if (tags.length > 0) globalPayload.tags = arrayUnion(...tags);
+      if (relationships.length > 0) globalPayload.relationships = arrayUnion(...relationships);
 
       const promises: any[] = [
-        setDoc(conceptRef, {
-          id: slug,
-          title: concept,
-          normalizedTitle: concept.toLowerCase(),
-          rank: increment(10),
-          lastExplanation: result,
-          updatedAt: serverTimestamp()
-        }, { merge: true }),
-        setDoc(expRef, {
-          id: explanationId,
-          conceptId: slug,
-          userId: user.uid,
+        addDoc(collection(db, "saved_topics"), {
+          uid: user.uid,
+          concept: concept,
           payload: result,
+          domain: result.domain || "general",
+          domainEmoji: result.domainEmoji || "🧠",
+          isManuallySaved: true,
           learningStyle,
-          votes: { ups: 0, downs: 0 },
           createdAt: serverTimestamp()
         }),
-        setDoc(vaultRef, {
-          id: slug,
-          userId: user.uid,
-          conceptId: slug,
-          explanationId: explanationId,
-          conceptTitle: concept,
-          savedAt: serverTimestamp()
-        }),
-        setDoc(doc(db, "users", user.uid), {
+        setDoc(userPrefsRef, {
           preferredLearningStyle: learningStyle,
-          lastActive: serverTimestamp()
+          lastActivity: serverTimestamp()
         }, { merge: true }),
       ];
+
+      if (!globalSnap.exists()) {
+        globalPayload.concept = concept;
+        globalPayload.createdAt = serverTimestamp();
+        globalPayload.domain = result.domain || "General";
+        globalPayload.domainEmoji = result.domainEmoji || "🧠";
+        promises.push(setDoc(globalRef, globalPayload));
+      } else {
+        promises.push(setDoc(globalRef, globalPayload, { merge: true }));
+      }
       
       await Promise.all(promises);
+      
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, "save_to_library");
+      handleFirestoreError(err, OperationType.CREATE, "saved_topics");
     } finally {
       setSaving(false);
     }
@@ -1636,25 +1522,21 @@ function UnderstandableEngine() {
         }, 500);
 
         const slug = activeTopic.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-        const conceptRef = doc(db, "concepts", slug);
-        const explanationId = generateUUID();
+        const globalRef = doc(db, "global_index", slug);
 
         // --- AUTOMATIC PERSISTENCE FOR LEARNING & RANKING ---
         Promise.all([
-          addDoc(collection(db, "global_logs"), {
-            id: explanationId,
-            conceptId: slug,
-            conceptTitle: activeTopic,
+          addDoc(collection(db, "synthesis_logs"), {
+            concept: activeTopic,
             payload: data,
-            userId: user?.uid || null,
+            uid: user?.uid || null,
+            isManuallySaved: false,
             createdAt: serverTimestamp()
           }),
-          setDoc(conceptRef, {
-            id: slug,
-            title: activeTopic,
-            normalizedTitle: activeTopic.toLowerCase(),
+          setDoc(globalRef, {
+            concept: activeTopic,
             rank: increment(1),
-            lastExplanation: data,
+            lastPayload: data,
             updatedAt: serverTimestamp()
           }, { merge: true })
         ]).catch(err => {
@@ -1748,7 +1630,7 @@ function UnderstandableEngine() {
              transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
              className="absolute top-1/4 right-1/4"
           >
-            <Cloud size={64} strokeWidth={1} />
+            <Cloud size={120} strokeWidth={1} />
           </motion.div>
         </div>
 
@@ -1767,7 +1649,7 @@ function UnderstandableEngine() {
               transition={{ duration: 2, repeat: Infinity }}
               className="text-accent"
             >
-              <Telescope size={48} strokeWidth={1.5} />
+              <Telescope size={64} strokeWidth={1.5} />
             </motion.div>
             <motion.div
               animate={{ 
@@ -1777,7 +1659,7 @@ function UnderstandableEngine() {
               transition={{ duration: 2.5, repeat: Infinity, delay: 0.2 }}
               className="text-red-400"
             >
-              <Ghost size={56} strokeWidth={1.5} />
+              <Ghost size={80} strokeWidth={1.5} />
             </motion.div>
             <motion.div
               animate={{ 
@@ -1787,7 +1669,7 @@ function UnderstandableEngine() {
               transition={{ duration: 1.8, repeat: Infinity, delay: 0.4 }}
               className="text-blue-400"
             >
-              <CircleDashed size={40} strokeWidth={1.5} className="animate-spin-slow" />
+              <CircleDashed size={56} strokeWidth={1.5} className="animate-spin-slow" />
             </motion.div>
           </div>
 
@@ -1827,53 +1709,6 @@ function UnderstandableEngine() {
     );
   }
 
-  // Variants for the slide transitions
-  const slideVariants = {
-    initial: (direction: number) => ({
-      x: direction > 0 ? '100%' : '-100%',
-      opacity: 0,
-    }),
-    animate: {
-      x: 0,
-      opacity: 1,
-      transition: {
-        x: { type: "spring" as const, stiffness: 300, damping: 30 },
-        opacity: { duration: 0.2 }
-      }
-    },
-    exit: (direction: number) => ({
-      x: direction > 0 ? '-100%' : '100%',
-      opacity: 0,
-      transition: {
-        x: { type: "spring" as const, stiffness: 300, damping: 30 },
-        opacity: { duration: 0.2 }
-      }
-    })
-  };
-
-  // Variants for top-level view transitions
-  const viewVariants = {
-    initial: { x: '100%', opacity: 0 },
-    animate: { 
-      x: 0, 
-      opacity: 1, 
-      transition: { 
-        type: "spring" as const, 
-        stiffness: 300, 
-        damping: 30 
-      } 
-    },
-    exit: { 
-      x: '-100%', 
-      opacity: 0, 
-      transition: { 
-        type: "spring" as const, 
-        stiffness: 300, 
-        damping: 30 
-      } 
-    }
-  };
-
   if (!authReady) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
@@ -1882,11 +1717,9 @@ function UnderstandableEngine() {
     );
   }
 
-  const isSlideMode = !!result && !showIndex && !showLibrary && !showDiscovery;
-
   return (
-    <div className={`min-h-screen transition-colors duration-700 relative flex flex-col ${isSlideMode ? 'h-[100dvh] overflow-hidden' : 'overflow-x-hidden overflow-y-auto'} bg-grid bg-bg text-ink`}>
-      <div className={`w-full ${isSlideMode ? 'h-full' : 'min-h-screen'} flex flex-col relative bg-inherit`}>
+    <div className="min-h-screen transition-colors duration-700 relative flex flex-col overflow-x-hidden overflow-y-auto bg-grid bg-bg text-ink">
+      <div className="w-full min-h-screen flex flex-col relative bg-inherit">
         {/* Onboarding Overlay */}
         <AnimatePresence>
           {showOnboarding && (
@@ -1902,88 +1735,88 @@ function UnderstandableEngine() {
                 initial={{ y: 30, opacity: 0, scale: 0.95 }}
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: -30, opacity: 0, scale: 1.05 }}
-                className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6 md:p-12 rounded-3xl border border-white/20 shadow-2xl bg-white text-slate-900"
+                className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6 md:p-16 lg:p-24 rounded-[2rem] md:rounded-[3rem] border-[6px] md:border-[12px] border-white shadow-2xl bg-[#FFFDF9] text-slate-900"
               >
-                <div className="flex flex-col gap-6 md:gap-8">
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] opacity-30 font-mono">
-                    <span className="flex items-center gap-2">
-                       <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                       Principle {onboardingStep + 1} of 4
+                <div className="flex flex-col gap-6 md:gap-14">
+                  <div className="flex items-center justify-between text-xs md:text-sm font-black uppercase tracking-[0.3em] opacity-40 font-mono">
+                    <span className="flex items-center gap-3">
+                       <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
+                       Hello! Idea {onboardingStep + 1} of 4
                     </span>
                     <button 
                       onClick={() => {
                         setShowOnboarding(false);
                         localStorage.setItem("understandable-onboarded", "true");
                       }}
-                      className="hover:text-accent transition-colors underline decoration-1 underline-offset-4"
+                      className="hover:text-accent transition-colors underline decoration-2 underline-offset-4"
                     >
-                      Skip
+                      Skip Walkthrough
                     </button>
                   </div>
 
                   {onboardingStep === 0 && (
-                    <div className="flex flex-col gap-4">
-                      <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center text-yellow-600">
-                        <Lightbulb size={20} />
+                    <div className="flex flex-col gap-6 md:gap-10">
+                      <div className="w-16 h-16 md:w-24 md:h-24 bg-yellow-100 rounded-[1rem] md:rounded-[2rem] flex items-center justify-center text-yellow-600 shadow-inner">
+                        <Lightbulb size={32} className="md:w-[56px] md:h-[56px]" strokeWidth={2.5} />
                       </div>
-                      <h2 className="font-display text-3xl md:text-4xl font-medium leading-tight tracking-tight">
-                        Inquiry without <span className="text-accent underline decoration-2 underline-offset-4 decoration-accent/10">friction.</span>
+                      <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
+                        Ask about <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">anything!</span>
                       </h2>
-                      <p className="font-sans text-base md:text-lg text-slate-500 leading-relaxed">
-                        Curious about the moon? Or why toast is crunchy? Ask anything and we'll synthesize an explanation that feels intuitive.
+                      <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
+                        Curious about the moon? Or why toast is crunchy? Just type it in and we'll tell you a story that makes it clear as day! 🎈
                       </p>
                     </div>
                   )}
 
                   {onboardingStep === 1 && (
-                    <div className="flex flex-col gap-4">
-                      <div className="w-10 h-10 bg-sky-50 rounded-lg flex items-center justify-center text-sky-600">
-                        <Smile size={20} />
+                    <div className="flex flex-col gap-6 md:gap-10">
+                      <div className="w-16 h-16 md:w-24 md:h-24 bg-sky-100 rounded-[1rem] md:rounded-[2rem] flex items-center justify-center text-sky-600 shadow-inner">
+                        <Smile size={32} className="md:w-[56px] md:h-[56px]" strokeWidth={2.5} />
                       </div>
-                      <h2 className="font-display text-3xl md:text-4xl font-medium leading-tight tracking-tight">
-                        Cognitive <span className="text-accent underline decoration-2 underline-offset-4 decoration-accent/10">adaptation.</span>
+                      <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
+                        It grows <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">with you!</span>
                       </h2>
-                      <p className="font-sans text-base md:text-lg text-slate-500 leading-relaxed">
-                        The engine learns your mental models. The more you explore, the more precise and helpful the syntheses become.
+                      <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
+                        The more we talk, the better I get at explaining things just the way you like. It's like having a friend who always knows the best way to help! 🌱
                       </p>
                     </div>
                   )}
 
                   {onboardingStep === 2 && (
-                    <div className="flex flex-col gap-4">
-                      <div className="w-10 h-10 bg-rose-50 rounded-lg flex items-center justify-center text-rose-600">
-                        <Heart size={20} />
+                    <div className="flex flex-col gap-6 md:gap-10">
+                      <div className="w-16 h-16 md:w-24 md:h-24 bg-rose-100 rounded-[1rem] md:rounded-[2rem] flex items-center justify-center text-rose-600 shadow-inner">
+                        <Heart size={32} className="md:w-[56px] md:h-[56px]" strokeWidth={2.5} />
                       </div>
-                      <h2 className="font-display text-3xl md:text-4xl font-medium leading-tight tracking-tight">
-                         Collaborative <span className="text-accent underline decoration-2 underline-offset-4 decoration-accent/10">clarity.</span>
+                      <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
+                         High-fives for <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">Aha's!</span>
                       </h2>
-                      <p className="font-sans text-base md:text-lg text-slate-500 leading-relaxed">
-                        Affirming an explanation helps refine the global knowledge graph, ensuring better understanding for all explorers.
+                      <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
+                        When a story clicks for you, give it a thumbs up. It helps everyone else find the best secrets to understanding too! ✨
                       </p>
                     </div>
                   )}
 
                   {onboardingStep === 3 && (
-                    <div className="flex flex-col gap-4">
-                      <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-                        <Sparkles size={20} />
+                    <div className="flex flex-col gap-6 md:gap-10">
+                      <div className="w-16 h-16 md:w-24 md:h-24 bg-indigo-100 rounded-[1rem] md:rounded-[2rem] flex items-center justify-center text-indigo-600 shadow-inner">
+                        <Sparkles size={32} className="md:w-[56px] md:h-[56px]" strokeWidth={2.5} />
                       </div>
-                      <h2 className="font-display text-3xl md:text-4xl font-medium leading-tight tracking-tight">
-                         Knowledge <span className="text-accent underline decoration-2 underline-offset-4 decoration-accent/10">architecture.</span>
+                      <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
+                         Building your <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">world!</span>
                       </h2>
-                      <p className="font-sans text-base md:text-lg text-slate-500 leading-relaxed">
-                        Learning is incremental. We map new concepts onto existing foundations until you possess a robust tower of wisdom.
+                      <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
+                        Learning is like building with blocks. We start at the bottom and work our way up until you have a big, beautiful tower of knowledge! 🧱
                       </p>
                     </div>
                   )}
 
-                  <div className="pt-6 flex flex-col sm:flex-row gap-3 items-center mt-auto">
+                  <div className="pt-6 md:pt-12 flex flex-col md:flex-row gap-6 md:gap-8 items-center mt-auto">
                     {onboardingStep < 3 ? (
                       <button
                         onClick={() => setOnboardingStep(onboardingStep + 1)}
-                        className="w-full sm:flex-1 py-4 rounded-xl font-sans text-sm font-bold uppercase tracking-[0.1em] bg-slate-900 text-white hover:bg-accent transition-all shadow-lg hover:-translate-y-0.5"
+                        className="w-full md:flex-1 py-6 md:py-10 rounded-[1.5rem] md:rounded-[2.5rem] font-sans text-xl md:text-2xl font-black uppercase tracking-[0.2em] bg-slate-900 text-white hover:bg-accent transition-all shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-accent/40 hover:-translate-y-2 ring-8 ring-slate-900/5 hover:ring-accent/10"
                       >
-                        Continue →
+                        Keep going! →
                       </button>
                     ) : (
                       <button
@@ -1991,17 +1824,17 @@ function UnderstandableEngine() {
                           setShowOnboarding(false);
                           localStorage.setItem("understandable-onboarded", "true");
                         }}
-                        className="w-full py-4 rounded-xl font-sans text-sm font-bold uppercase tracking-[0.1em] bg-accent text-white hover:bg-slate-900 transition-all shadow-lg hover:-translate-y-0.5"
+                        className="w-full py-6 md:py-10 rounded-[1.5rem] md:rounded-[2.5rem] font-sans text-xl md:text-2xl font-black uppercase tracking-[0.2em] bg-accent text-white hover:bg-slate-900 transition-all shadow-[0_20px_50px_rgba(166,139,106,0.3)] hover:-translate-y-2 ring-8 ring-accent/10 hover:ring-slate-900/5"
                       >
-                        Start Exploring →
+                        Let's Explore! →
                       </button>
                     )}
                     {onboardingStep > 0 && (
                       <button
                         onClick={() => setOnboardingStep(onboardingStep - 1)}
-                        className="font-sans text-[10px] font-bold uppercase tracking-widest opacity-30 hover:opacity-100 transition-opacity p-4"
+                        className="font-sans text-base font-black uppercase tracking-widest opacity-30 hover:opacity-100 transition-opacity p-6"
                       >
-                        ← Back
+                        ← Wait, go back
                       </button>
                     )}
                   </div>
@@ -2032,13 +1865,6 @@ function UnderstandableEngine() {
               className="hidden lg:block font-mono text-[10px] uppercase tracking-[0.4em] font-black opacity-30 hover:opacity-100 hover:text-accent transition-all pl-8 border-l border-border h-8"
             >
               Onboarding
-            </button>
-
-            <button 
-              onClick={() => setShowLibrary(true)}
-              className="hidden md:block font-mono text-[10px] uppercase tracking-[0.4em] font-black opacity-30 hover:opacity-100 hover:text-accent transition-all pl-8 border-l border-border h-8"
-            >
-              Library
             </button>
           </div>
 
@@ -2082,11 +1908,11 @@ function UnderstandableEngine() {
                           initial={{ opacity: 0, y: 20, scale: 0.98 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 20, scale: 0.98 }}
-                          className="absolute right-0 top-16 md:top-20 w-[calc(100vw-32px)] sm:w-80 z-50 p-6 md:p-8 border border-border shadow-2xl bg-surface text-ink rounded-2xl overflow-hidden"
+                          className="absolute right-0 top-16 md:top-20 w-[calc(100vw-32px)] sm:w-80 z-50 p-6 md:p-8 border-4 border-border shadow-[24px_24px_0_0_rgba(0,0,0,0.05)] bg-surface text-ink rounded-[2rem] overflow-hidden"
                         >
                           <div className="flex flex-col gap-8">
-                            <div className="flex flex-col gap-4 border-b border-border pb-8">
-                              <div className="w-12 h-12 rounded-full border border-accent p-0.5 mb-2">
+                            <div className="flex flex-col gap-4 border-b-2 border-border pb-8">
+                              <div className="w-12 h-12 rounded-full border-2 border-accent p-1 mb-2">
                                 {user.photoURL ? (
                                   <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" referrerPolicy="no-referrer" />
                                 ) : (
@@ -2094,8 +1920,8 @@ function UnderstandableEngine() {
                                 )}
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-xl font-display font-medium tracking-tight leading-none">{user.displayName?.split(' ')[0]}</span>
-                                <span className="text-[10px] font-mono opacity-40 break-all mt-1">{user.email}</span>
+                                <span className="text-xl font-display font-black uppercase tracking-widest leading-none">{user.displayName?.split(' ')[0]}</span>
+                                <span className="text-[10px] font-mono opacity-50 break-all mt-1">{user.email}</span>
                               </div>
                             </div>
 
@@ -2104,11 +1930,6 @@ function UnderstandableEngine() {
                                 icon={<LayoutDashboard size={18} />} 
                                 label="My Index" 
                                 onClick={() => { setShowAccount(false); setShowIndex(true); setIndexType('personal'); }} 
-                              />
-                              <AccountMenuItem 
-                                icon={<BookOpen size={18} />} 
-                                label="Learning Library" 
-                                onClick={() => { setShowAccount(false); setShowLibrary(true); }} 
                               />
                               <AccountMenuItem 
                                 icon={<Globe size={18} />} 
@@ -2141,22 +1962,13 @@ function UnderstandableEngine() {
                               </div>
                             </nav>
 
-                            <div className="pt-6 border-t-2 border-border flex flex-col gap-4">
+                            <div className="pt-6 border-t-2 border-border flex justify-between items-center">
                               <button 
                                 onClick={() => signOut(auth)}
                                 className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.3em] font-black text-soft-red hover:opacity-80 transition-all"
                               >
                                 <LogOut size={14} />
                                 Sign Out
-                              </button>
-                              <button 
-                                onClick={async () => {
-                                  alert("Account deletion is temporarily disabled. Please contact support.");
-                                }}
-                                className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.2em] font-black text-ink/30 hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 size={12} />
-                                Delete Account & Data
                               </button>
                             </div>
                           </div>
@@ -2169,7 +1981,7 @@ function UnderstandableEngine() {
                 <Tooltip text="Sign in to your account">
                   <button 
                     onClick={handleLogin}
-                    className="font-mono text-xs md:text-sm tracking-[0.2em] uppercase transition-all font-bold border border-ink/20 px-6 py-3 md:px-8 md:py-4 hover:bg-ink hover:text-bg text-ink rounded-lg shadow-sm"
+                    className="font-mono text-sm md:text-xl tracking-[0.1em] md:tracking-[0.2em] uppercase transition-all font-black border-2 border-ink px-6 py-3 md:px-12 md:py-6 hover:bg-ink hover:text-bg text-ink rounded-xl md:rounded-2xl shadow-[4px_4px_0_0_rgba(0,0,0,0.05)] md:shadow-[8px_8px_0_0_rgba(0,0,0,0.05)]"
                   >
                     SIGN IN
                   </button>
@@ -2180,231 +1992,345 @@ function UnderstandableEngine() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col md:flex-row z-10 transition-all md:divide-x divide-white/5 relative overflow-x-hidden">
+        <main className="flex-1 flex flex-col md:flex-row z-10 transition-all md:divide-x divide-white/5">
           
-          <AnimatePresence mode="popLayout" initial={false}>
-            {/* VIEW: HOME (INPUT + SUGGESTIONS) */}
-            {!showIndex && !result && (
-              <motion.section 
-                key="view-home"
-                variants={viewVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="w-full md:w-[32%] flex-1 md:flex-initial flex flex-col p-6 md:p-10 lg:px-20 lg:py-32 border-b md:border-b-0 md:sticky md:top-16 md:h-[calc(100vh-80px)] overflow-y-auto no-scrollbar bg-bg"
-              >
-                <div className="w-full md:max-w-md md:ml-auto">
-                  <span className="font-mono text-[10px] md:text-sm tracking-[0.4em] uppercase mb-4 block font-black text-ink">
-                    Understand Anything. Instantly.
-                  </span>
-                  
-                  <div className="relative p-6 md:p-10 border transition-all duration-500 bg-surface border-border shadow-sm rounded-2xl focus-within:border-accent/40 focus-within:shadow-md">
-                    <textarea
-                      ref={inputRef}
-                      value={concept}
-                      onChange={e => {
-                        const val = e.target.value;
-                        if (val.length <= MAX_CONCEPT_LENGTH) {
-                          setConcept(val);
-                          setConceptError(null);
-                        } else {
-                          setConceptError(`Topic must be under ${MAX_CONCEPT_LENGTH} characters.`);
-                        }
+          {/* INPUT COLUMN */}
+          {!showIndex && (
+            <motion.section 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className={`w-full md:w-[32%] flex flex-col p-6 md:p-10 lg:px-20 lg:py-32 border-b md:border-b-0 md:sticky md:top-16 md:h-[calc(100vh-80px)] overflow-y-auto no-scrollbar
+                ${result ? 'hidden md:flex' : 'flex'}
+              `}
+            >
+            <div className="w-full md:max-w-md md:ml-auto">
+              <span className="font-mono text-[10px] md:text-sm tracking-[0.4em] uppercase mb-4 block font-black text-ink">
+                Understand Anything. Instantly.
+              </span>
+              
+              <div className="relative p-6 md:p-10 border-2 md:border-4 transition-all duration-500 bg-surface border-border shadow-[12px_12px_0_0_rgba(0,0,0,0.03)] rounded-3xl">
+                <textarea
+                  ref={inputRef}
+                  value={concept}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val.length <= MAX_CONCEPT_LENGTH) {
+                      setConcept(val);
+                      setConceptError(null);
+                    } else {
+                      setConceptError(`Topic must be under ${MAX_CONCEPT_LENGTH} characters.`);
+                    }
 
-                        if (e.target.scrollHeight < 400) {
-                          e.target.style.height = 'auto';
-                          e.target.style.height = Math.max(e.target.scrollHeight, 60) + 'px';
-                        }
-                      }}
-                      onKeyDown={handleKey}
-                      placeholder="Type any topic you want to understand..."
-                      rows={1}
-                      className={`w-full bg-transparent border-none outline-none resize-none transition-all duration-700 break-words placeholder:opacity-30 text-xl md:text-3xl lg:text-4xl font-display font-medium text-ink tracking-tight leading-none
-                        ${conceptError ? "text-red-500" : ""}
-                      `}
-                    />
-                  </div>
+                    if (e.target.scrollHeight < 400) {
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.max(e.target.scrollHeight, 60) + 'px';
+                    }
+                  }}
+                  onKeyDown={handleKey}
+                  placeholder="Type any topic you want to understand..."
+                  rows={1}
+                  className={`w-full bg-transparent border-none outline-none resize-none transition-all duration-700 break-words placeholder:opacity-60 text-xl md:text-3xl lg:text-4xl font-display font-black text-ink tracking-tighter leading-none
+                    ${conceptError ? "text-red-500" : ""}
+                  `}
+                />
+              </div>
 
-                  {conceptError && (
-                    <div className="mt-4 p-4 bg-red-500/10 border-2 border-red-500/40 text-red-500 text-[10px] font-mono uppercase tracking-widest leading-loose">
-                      {conceptError}
-                    </div>
-                  )}
+              {conceptError && (
+                <div className="mt-4 p-4 bg-red-500/10 border-2 border-red-500/40 text-red-500 text-[10px] font-mono uppercase tracking-widest leading-loose">
+                  {conceptError}
+                </div>
+              )}
 
-                  <div className="mt-2 flex justify-between items-center">
-                    {!user && (
-                      <div className="flex flex-col gap-2">
-                        <button 
-                          onClick={handleLogin}
-                          className="font-mono text-[10px] uppercase tracking-widest text-accent font-black hover:opacity-100 transition-opacity opacity-80"
-                        >
-                          Sign in to save and sync topics
-                        </button>
-                        <div className="flex gap-4 font-mono text-[8px] uppercase tracking-widest opacity-30">
-                          <button onClick={() => setShowTerms(true)} className="hover:opacity-100 hover:text-accent transition-all">Terms</button>
-                          <button onClick={() => setShowPrivacy(true)} className="hover:opacity-100 hover:text-accent transition-all">Privacy</button>
+              <div className="mt-2 flex justify-between items-center">
+                {!user && (
+                  <button 
+                    onClick={handleLogin}
+                    className="font-mono text-[10px] uppercase tracking-widest text-accent font-black hover:opacity-100 transition-opacity opacity-80"
+                  >
+                    Sign in to save
+                  </button>
+                )}
+                <span className={`font-mono text-[10px] uppercase tracking-widest transition-opacity ml-auto ${concept.length > MAX_CONCEPT_LENGTH * 0.8 ? "opacity-100" : "opacity-40"}`}>
+                  {concept.length} / {MAX_CONCEPT_LENGTH}
+                </span>
+              </div>
+
+              <div className="mt-8 md:mt-12 mb-8 md:mb-12">
+                <button
+                  onClick={() => {
+                    understandTopic();
+                  }}
+                  disabled={concept.length === 0 || !!conceptError || loading}
+                  className={`w-full group flex items-center justify-center gap-6 px-8 py-5 md:px-12 md:py-8 font-mono text-sm md:text-lg uppercase tracking-[0.2em] font-black transition-all border-4 shadow-[8px_8px_0_0_rgba(255,255,255,0.1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_0_rgba(255,255,255,0.15)] active:translate-x-0 active:translate-y-0 active:shadow-[4px_4px_0_0_rgba(255,255,255,0.1)]
+                    ${(concept.length === 0 || !!conceptError || loading) ? "opacity-30 cursor-not-allowed" : "opacity-100"}
+                    bg-black border-white/20 text-white hover:bg-white hover:text-black
+                  `}
+                >
+                  {loading ? "Synthesizing..." : "Understand it!"}
+                </button>
+              </div>
+
+              {/* SUGGESTIONS */}
+              <div className="mb-24 transition-opacity">
+                <div className="flex items-center justify-between mb-8">
+                  <span className="font-mono text-xs uppercase tracking-[0.3em] font-black opacity-80">Try these topics</span>
+                  <Tooltip text="Shuffle Concepts">
+                    <button 
+                      onClick={refreshSuggestions}
+                      className="p-2 transition-opacity"
+                      title="Shuffle concepts"
+                    >
+                      <RotateCcw className="w-5 h-5" strokeWidth={3} />
+                    </button>
+                  </Tooltip>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  {suggestions.map((s, i) => {
+                    const colors = [
+                      "bg-[#FFD1DC] text-black border-[#FFB1C1] hover:bg-[#FFC1CC]", // Pink
+                      "bg-[#B3E5FC] text-black border-[#81D4FA] hover:bg-[#A1D5EC]", // Blue
+                      "bg-[#FFF9C4] text-black border-[#FFF176] hover:bg-[#FFF5B4]", // Yellow
+                      "bg-[#C8E6C9] text-black border-[#A5D6A7] hover:bg-[#B8D6B9]", // Green
+                      "bg-[#E1BEE7] text-black border-[#CE93D8] hover:bg-[#D1AEC7]", // Purple
+                    ];
+                    const rotations = ["rotate-1", "-rotate-1", "rotate-2", "-rotate-2", "rotate-0"];
+                    const colorClass = colors[i % colors.length];
+                    const rotationClass = rotations[i % rotations.length];
+
+                    return (
+                      <button
+                        key={`concept-sug-item-${i}-${s.concept.replace(/\s+/g, '_')}-${s.isVault ? 'v' : 'r'}`}
+                        onClick={() => understandTopic(s.concept)}
+                        className={`text-left p-6 border-2 transition-all group/sug aspect-square flex flex-col justify-between shadow-[6px_6px_0_0_rgba(0,0,0,0.1)] hover:shadow-[10px_10px_0_0_rgba(0,0,0,0.15)] hover:translate-y-[-2px]
+                          ${colorClass} ${rotationClass} font-sans text-[10px] md:text-sm uppercase font-black tracking-widest overflow-hidden
+                        `}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="w-4 h-1 bg-black/10" />
+                          {s.isVault && <span className="text-[8px] opacity-40 font-mono tracking-tighter">CONFIRMED</span>}
                         </div>
-                      </div>
-                    )}
-                    <span className={`font-mono text-[10px] uppercase tracking-widest transition-opacity ml-auto ${concept.length > MAX_CONCEPT_LENGTH * 0.8 ? "opacity-100" : "opacity-40"}`}>
-                      {concept.length} / {MAX_CONCEPT_LENGTH}
-                    </span>
-                  </div>
+                        <span className="line-clamp-4 leading-tight">{s.concept}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-                  <div className="mt-8 md:mt-12 mb-8 md:mb-12">
-                    <button
-                      onClick={() => {
-                        understandTopic();
-                      }}
-                      disabled={concept.length === 0 || !!conceptError || loading}
-                      className={`w-full group flex items-center justify-center gap-6 px-8 py-5 md:px-12 md:py-8 font-mono text-xs md:text-sm uppercase tracking-[0.2em] font-bold transition-all border shadow-sm hover:shadow-lg disabled:opacity-30 disabled:cursor-not-allowed bg-slate-900 border-white/10 text-white hover:bg-accent rounded-xl
-                      `}
-                    >
-                      {loading ? "Synthesizing..." : "Understand it!"}
-                    </button>
-                  </div>
+            <div className={`space-y-8 max-w-xs transition-all duration-1000
+              ${loading ? "opacity-100" : "opacity-80"}
+            `}>
+              <div className="h-3 w-40 bg-accent" />
+              <p className="text-lg font-mono uppercase tracking-[0.4em] leading-loose text-current font-black">
+                {loading ? "Thinking about your topic..." : "Ready to start"}
+              </p>
+            </div>
+          </div>
+        </motion.section>
+        )}
 
-                  {/* SUGGESTIONS */}
-                  <div className="mb-24 transition-opacity">
-                    <div className="flex items-center justify-between mb-8">
-                      <span className="font-mono text-xs uppercase tracking-[0.3em] font-black opacity-80">Try these topics</span>
-                      <Tooltip text="Shuffle Concepts">
+        {/* RESULT COLUMN */}
+        <section ref={resultRef} className={`w-full ${!showIndex ? 'md:w-[68%]' : 'md:w-full'} flex flex-col p-6 md:p-12 lg:px-24 lg:py-24 transition-all duration-1000 bg-bg`}>
+          <div className="flex-1 flex flex-col justify-center py-10">
+            <AnimatePresence mode="wait">
+            {showIndex ? (
+              <motion.div
+                key="index"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col h-full"
+              >
+                <div className="mb-8 md:mb-16 flex flex-col gap-8 border-b-4 md:border-b-8 border-current pb-12">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+                    <div className="flex flex-wrap gap-8 md:gap-16">
+                      {["personal", "global"].map(type => (
                         <button 
-                          onClick={refreshSuggestions}
-                          className="p-2 transition-opacity"
-                          title="Shuffle concepts"
+                          key={`tab-${type}`}
+                          onClick={() => {
+                            setIndexType(type as any);
+                            setActiveDomain(null);
+                          }}
+                          className={`font-sans text-xl md:text-2xl font-black uppercase tracking-[0.2em] md:tracking-[0.4em] transition-all
+                            ${indexType === type ? "scale-105 md:scale-110 text-accent underline underline-offset-8 md:underline-offset-[16px] decoration-4 md:decoration-8" : "opacity-30 hover:opacity-100"}
+                          `}
                         >
-                          <RotateCcw className="w-5 h-5" strokeWidth={3} />
+                          {type === "personal" ? "My Vault" : "The Core Index"}
                         </button>
-                      </Tooltip>
+                      ))}
                     </div>
-                    <div className="grid grid-cols-2 gap-6">
-                      {suggestions.map((s, i) => {
-                        const colors = [
-                          "bg-[#FFD1DC] text-black border-[#FFB1C1] hover:bg-[#FFC1CC]", // Pink
-                          "bg-[#B3E5FC] text-black border-[#81D4FA] hover:bg-[#A1D5EC]", // Blue
-                          "bg-[#FFF9C4] text-black border-[#FFF176] hover:bg-[#FFF5B4]", // Yellow
-                          "bg-[#C8E6C9] text-black border-[#A5D6A7] hover:bg-[#B8D6B9]", // Green
-                          "bg-[#E1BEE7] text-black border-[#CE93D8] hover:bg-[#D1AEC7]", // Purple
-                        ];
-                        const rotations = ["rotate-1", "-rotate-1", "rotate-2", "-rotate-2", "rotate-0"];
-                        const colorClass = colors[i % colors.length];
-                        const rotationClass = rotations[i % rotations.length];
-
-                        return (
-                          <button
-                            key={`concept-sug-item-${i}-${s.concept?.replace(/\s+/g, '_')}-${s.isVault ? 'v' : 'r'}`}
-                            onClick={() => understandTopic(s.concept)}
-                            className={`text-left p-6 border transition-all group/sug aspect-square flex flex-col justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 rounded-xl
-                              ${colorClass} font-sans text-[10px] md:text-xs uppercase font-bold tracking-widest overflow-hidden
-                            `}
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="w-4 h-0.5 bg-black/10" />
-                              {s.isVault && <span className="text-[7px] opacity-20 font-mono">VERIFIED</span>}
-                            </div>
-                            <span className="line-clamp-4 leading-tight opacity-70 group-hover/sug:opacity-100">{s.concept}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <button onClick={() => setShowIndex(false)} className="w-full md:w-auto font-mono text-[10px] md:text-sm uppercase tracking-widest font-black border-2 border-ink px-6 py-3 md:px-8 md:py-4 hover:bg-ink hover:text-bg transition-all shadow-[6px_6px_0_0_rgba(0,0,0,0.1)] rounded-xl text-ink shrink-0">← Back</button>
                   </div>
 
-                  <div className={`space-y-8 max-w-xs transition-all duration-1000
-                    ${loading ? "opacity-100" : "opacity-80"}
-                  `}>
-                    <div className="h-3 w-40 bg-accent" />
-                    <p className="text-lg font-mono uppercase tracking-[0.4em] leading-loose text-current font-black">
-                      {loading ? "Thinking about your topic..." : "Ready to start"}
-                    </p>
-                  </div>
-
-                  <div className="mt-12 pt-12 border-t-2 border-dashed border-border flex flex-col gap-4">
-                    <button 
-                      onClick={() => setShowLibrary(true)}
-                      className="flex items-center gap-4 p-6 bg-surface border-2 border-border rounded-2xl font-display text-xl font-black uppercase tracking-tight hover:border-accent hover:bg-accent/5 transition-all text-ink group"
-                    >
-                      <BookOpen size={20} className="text-accent group-hover:scale-110 transition-transform" />
-                      Learning Library
-                    </button>
-                    <button 
-                      onClick={() => {
-                        const surpriseTopics = [
-                          "The Voynich Manuscript", "Panpsychism", "Strange Attractors", "Bioluminescence", "The Fermi Paradox", "Fractals in Nature", "The History of Zero"
-                        ];
-                        const randomTopic = surpriseTopics[Math.floor(Math.random() * surpriseTopics.length)];
-                        understandTopic(randomTopic);
-                      }}
-                      className="flex items-center gap-4 p-6 bg-accent/10 border-2 border-accent/20 rounded-2xl font-mono text-xs uppercase tracking-[0.2em] font-black hover:bg-accent hover:text-bg transition-all text-accent group"
-                    >
-                      <Sparkles size={16} className="group-hover:rotate-12 transition-transform" />
-                      Surprise Me
-                    </button>
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 opacity-40" />
+                      <input 
+                        type="text"
+                        placeholder="Search for a concept..."
+                        value={indexSearch}
+                        onChange={(e) => setIndexSearch(e.target.value)}
+                        className="w-full bg-current/5 border-2 border-current/10 rounded-2xl py-5 pl-16 pr-6 font-mono text-sm uppercase tracking-widest font-black outline-none focus:border-accent transition-colors"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2 bg-current/5 p-1.5 rounded-2xl border-2 border-current/10">
+                      {(["alpha", "rank", "tags"] as const).map(mode => (
+                        <button
+                          key={`sort-${mode}`}
+                          onClick={() => setIndexSort(mode)}
+                          className={`px-5 py-3 rounded-xl font-mono text-[10px] uppercase tracking-widest font-black transition-all
+                            ${indexSort === mode ? "bg-accent text-bg shadow-[4px_4px_0_0_rgba(0,0,0,0.1)]" : "opacity-40 hover:opacity-100"}
+                          `}
+                        >
+                          {mode === "alpha" ? "A-Z" : mode === "rank" ? "Popular" : "Groups"}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar py-2 max-w-md">
+                      {Array.from(new Set(
+                        (indexType === "personal" ? savedUnderstandables : globalLogs)
+                          .map(ax => ax.domain || ax.payload?.domain || "General")
+                      )).sort().map(domain => (
+                        <button
+                          key={`domain-filter-${domain}`}
+                          onClick={() => setActiveDomain(activeDomain === domain ? null : domain)}
+                          className={`px-6 py-3 rounded-full font-mono text-[10px] uppercase tracking-widest font-black transition-all whitespace-nowrap border-2
+                            ${activeDomain === domain ? "bg-accent border-accent text-bg" : "bg-bg border-current/10 text-ink/40 hover:border-current hover:text-ink"}
+                          `}
+                        >
+                          {domain}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </motion.section>
-            )}
+                
+                <div className="flex-1 overflow-y-auto pr-4 md:pr-10 custom-scrollbar">
+                  {loadingIndex ? (
+                    <div className="h-full flex items-center justify-center font-mono text-2xl uppercase tracking-[0.4em] animate-pulse font-black italic opacity-40">Scanning Global Records...</div>
+                  ) : (
+                    <div className="pb-20">
+                      {(() => {
+                        const baseItems = (indexType === "personal" ? savedUnderstandables : globalLogs)
+                          .filter(ax => {
+                            const matchesSearch = ax.concept.toLowerCase().includes(indexSearch.toLowerCase());
+                            const matchesDomain = !activeDomain || (ax.domain || ax.payload?.domain) === activeDomain;
+                            return matchesSearch && matchesDomain;
+                          });
 
-            {/* VIEW: DISCOVERY FLOW (RESULT) */}
-            {result && !showIndex && (
-              <motion.section 
-                key="view-result"
-                variants={viewVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                ref={resultRef} 
-                className="w-full flex-1 flex flex-col p-4 md:p-12 lg:px-24 lg:py-24 bg-bg overflow-hidden md:overflow-y-auto"
+                        // Sorting logic
+                        const sortedItems = [...baseItems].sort((a, b) => {
+                          if (indexSort === "alpha") return a.concept.localeCompare(b.concept);
+                          if (indexSort === "rank") return (b.rank || 0) - (a.rank || 0);
+                          return 0; // "tags" uses a different rendering block below
+                        });
+
+                        if (indexSort === "tags") {
+                          const groups: { [key: string]: any[] } = {};
+                          sortedItems.forEach(item => {
+                            const tags = item.tags || (item.payload?.tags) || ["Uncategorized"];
+                            tags.forEach((tag: string) => {
+                              if (!groups[tag]) groups[tag] = [];
+                              // Avoid duplicating items across tags for a cleaner view
+                              if (!groups[tag].find(i => (i.id || i.concept) === (item.id || item.concept))) groups[tag].push(item);
+                            });
+                          });
+
+                          return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0])).map(([tag, items]) => (
+                            <div key={`tag-group-${tag}`} className="mb-16">
+                              <div className="flex items-center gap-6 mb-8">
+                                <h4 className="font-mono text-xs uppercase tracking-[0.4em] font-black text-accent bg-accent/10 px-6 py-2 rounded-full border border-accent/20">
+                                  {tag}
+                                </h4>
+                                <div className="flex-1 h-px bg-current/5" />
+                                <span className="font-mono text-[10px] opacity-30">{items.length} {items.length === 1 ? 'Concept' : 'Concepts'}</span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
+                                {items.map((ax, i) => renderConceptCard(ax, i, `tagged-${tag}`))}
+                              </div>
+                            </div>
+                          ));
+                        }
+
+                        return (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
+                            {sortedItems.map((ax, i) => renderConceptCard(ax, i, "sorted"))}
+                          </div>
+                        );
+                      })()}
+
+                      {(indexType === "personal" ? savedUnderstandables : globalLogs)
+                        .filter(ax => {
+                          const matchesSearch = ax.concept.toLowerCase().includes(indexSearch.toLowerCase());
+                          const matchesDomain = !activeDomain || (ax.domain || ax.payload?.domain) === activeDomain;
+                          return matchesSearch && matchesDomain;
+                        }).length === 0 && (
+                        <div key="empty-search-state" className="py-40 text-center font-sans">
+                           <div className="text-6xl mb-8 grayscale opacity-20">🕳️</div>
+                           <p className="text-2xl font-black uppercase tracking-widest opacity-20">Concept not found</p>
+                           <p className="font-mono text-sm opacity-40 mt-4 uppercase">The core records are empty in this sector.</p>
+                        </div>
+                      )}
+                      
+                      <div className="mt-20 flex justify-center">
+                        <button 
+                          onClick={() => setShowIndex(false)}
+                          className="font-mono text-sm md:text-lg uppercase tracking-[0.4em] font-black border-b-4 border-accent text-accent pb-2 hover:opacity-70 transition-all"
+                        >
+                          ← Synthesize New Topic
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ) : result ? (
+              <motion.div
+                key="result"
+                initial={{ opacity: 0, y: 60 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -60 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-6xl mx-auto flex flex-col min-h-[70vh]"
               >
-                <div className="flex-1 flex flex-col h-full">
-                  <motion.div
-                    key="result"
-                    initial={{ opacity: 0, y: 60 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -60 }}
-                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    className="w-full max-w-6xl mx-auto flex flex-col h-full relative"
-                  >
-                <div className="shrink-0 mb-6 md:mb-8 flex justify-between items-center">
+                <div className="mb-8 flex justify-between items-center">
                   <button 
-                    onClick={() => { setConcept(""); setResult(null); setAxiomStep(0); }}
+                    onClick={() => { setConcept(""); setResult(null); }}
                     className="font-mono text-[10px] uppercase tracking-widest font-black text-ink/40 hover:text-accent transition-all flex items-center gap-2"
                   >
-                    ← <span className="hidden md:inline">Abandon Discovery</span><span className="md:hidden">Back</span>
+                    ← Abandon Discovery
                   </button>
-                  <div className="flex gap-1.5 md:gap-2">
+                  <div className="flex gap-2">
                     {[0, 1, 2, 3, 4, 5].map(step => (
                       <div 
                         key={step} 
-                        className={`h-1 w-4 md:w-12 transition-all duration-500 rounded-full ${step <= axiomStep ? "bg-accent" : "bg-ink/10"}`} 
+                        className={`h-1 w-6 md:w-12 transition-all duration-500 rounded-full ${step <= axiomStep ? "bg-accent" : "bg-ink/10"}`} 
                       />
                     ))}
                   </div>
                 </div>
 
-                <div className="flex-1 relative overflow-hidden">
-                  <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+                <div className="flex-1 flex flex-col justify-center relative">
+                  <AnimatePresence mode="wait">
                     {isRefining && (
                       <motion.div 
-                        key="refining-axiom-loader"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-[60] bg-bg/80 backdrop-blur-sm flex flex-col items-center justify-center gap-6"
+                        className="absolute inset-0 z-10 bg-bg/80 backdrop-blur-sm flex flex-col items-center justify-center gap-6"
                       >
-                         <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-                         <span className="font-mono text-[10px] md:text-sm uppercase tracking-[0.4em] font-black animate-pulse text-center">Refining...</span>
+                         <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+                         <span className="font-mono text-sm uppercase tracking-[0.4em] font-black animate-pulse">Recalibrating Layer...</span>
                       </motion.div>
                     )}
                     {axiomStep === 0 && (
                       <motion.div 
                         key="step0"
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        className="space-y-6 md:space-y-12 w-full h-full flex flex-col justify-start md:justify-center overflow-y-auto no-scrollbar py-8 px-1"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-12"
                       >
                          <SectionLabel>The Anchor</SectionLabel>
                          <h2 className="text-4xl md:text-8xl font-display font-black uppercase tracking-tight leading-none text-ink">{concept}</h2>
@@ -2419,60 +2345,94 @@ function UnderstandableEngine() {
                     {axiomStep === 1 && (
                       <motion.div 
                         key="step1"
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        className="space-y-6 md:space-y-12 w-full h-full flex flex-col justify-start md:justify-center overflow-y-auto no-scrollbar py-8 px-1"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-12"
                       >
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6">
+                        <div className="flex justify-between items-center">
                           <StateStamp label={result.axis1?.labelA || "The Abundance"} type="success" />
                           <UnderstandableVoice text={result.axis1?.stateA || result.stateA} />
                         </div>
-                        <p className="text-2xl md:text-5xl font-sans leading-tight md:leading-[1.3] text-pretty transition-all text-ink">
+                        <p className="text-3xl md:text-6xl font-sans leading-[1.3] text-pretty font-bold transition-all text-ink">
                           {result.axis1?.stateA || result.stateA}
                         </p>
                         <ELI9Card content={result.axis1?.stateA_eli9} />
+
+                        {result.furtherExamples && result.furtherExamples.length > 0 && (
+                          <div className="mt-8 pt-8 border-t-2 border-dashed border-border flex items-center gap-6">
+                            <button 
+                              onClick={() => setAnotherExampleIndex(prev => (prev + 1) % result.furtherExamples.length)}
+                              className="font-mono text-[10px] uppercase tracking-widest font-black text-accent hover:opacity-70 flex items-center gap-2"
+                            >
+                              <Sparkles size={14} />
+                              Show Another Example
+                            </button>
+                            <motion.p 
+                              key={`ex1-${anotherExampleIndex}`}
+                              initial={{ opacity: 0, x: 10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="font-serif italic text-sm md:text-base opacity-60"
+                            >
+                              "{result.furtherExamples[anotherExampleIndex]}"
+                            </motion.p>
+                          </div>
+                        )}
                       </motion.div>
                     )}
 
                     {axiomStep === 2 && (
                       <motion.div 
                         key="step2"
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        className="space-y-6 md:space-y-12 w-full h-full flex flex-col justify-start md:justify-center overflow-y-auto no-scrollbar py-8 px-1"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-12"
                       >
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6">
+                        <div className="flex justify-between items-center">
                           <StateStamp label={result.axis1?.labelB || "The Scarcity"} type="struggle" />
                           <UnderstandableVoice text={result.axis1?.stateB || result.stateB} />
                         </div>
-                        <p className="text-2xl md:text-5xl font-sans leading-tight md:leading-[1.3] text-pretty transition-all text-ink">
+                        <p className="text-3xl md:text-6xl font-sans leading-[1.3] text-pretty font-bold transition-all text-ink">
                           {result.axis1?.stateB || result.stateB}
                         </p>
                         <ELI9Card content={result.axis1?.stateB_eli9} />
+
+                        {result.furtherExamples && result.furtherExamples.length > 0 && (
+                          <div className="mt-8 pt-8 border-t-2 border-dashed border-border flex items-center gap-6">
+                            <button 
+                              onClick={() => setAnotherExampleIndex(prev => (prev + 1) % result.furtherExamples.length)}
+                              className="font-mono text-[10px] uppercase tracking-widest font-black text-accent hover:opacity-70 flex items-center gap-2"
+                            >
+                              <Sparkles size={14} />
+                              Show Another Context
+                            </button>
+                            <motion.p 
+                              key={`ex2-${anotherExampleIndex}`}
+                              initial={{ opacity: 0, x: 10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="font-serif italic text-sm md:text-base opacity-60"
+                            >
+                              "{result.furtherExamples[(anotherExampleIndex + 1) % result.furtherExamples.length]}"
+                            </motion.p>
+                          </div>
+                        )}
                       </motion.div>
                     )}
 
                     {axiomStep === 3 && (
                       <motion.div 
                         key="step3"
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        className="p-6 md:p-16 lg:p-24 border border-accent/20 bg-accent/[0.02] rounded-3xl space-y-6 md:space-y-12 w-full h-full flex flex-col justify-start md:justify-center overflow-y-auto no-scrollbar py-8"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="p-12 md:p-20 border-4 border-accent/20 bg-accent/5 rounded-[3rem] space-y-12"
                       >
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6">
+                        <div className="flex justify-between items-center">
                           <SectionLabel>The Hidden Mechanism</SectionLabel>
                           <UnderstandableVoice text={result.axis2?.mechanism} />
                         </div>
-                        <p className="text-2xl md:text-5xl font-display font-medium tracking-tight leading-tight text-ink">
+                        <p className="text-3xl md:text-6xl font-display font-bold leading-[1.1] tracking-tight text-ink">
                           {result.axis2?.mechanism}
                         </p>
                         <ELI9Card content={result.axis2?.mechanism_eli9} />
@@ -2482,20 +2442,27 @@ function UnderstandableEngine() {
                     {axiomStep === 4 && (
                       <motion.div 
                         key="step4"
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        className="space-y-6 md:space-y-12 w-full h-full flex flex-col justify-start md:justify-center overflow-y-auto no-scrollbar py-8 px-1"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-12"
                       >
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6">
+                        <div className="flex justify-between items-center">
                           <SectionLabel>The Zenith</SectionLabel>
                           <UnderstandableVoice text={result.axis3?.zenith || result.zenith} />
                         </div>
-                        <p className="text-4xl md:text-7xl font-display font-medium text-ink tracking-tight leading-none text-balance">
+                        <p className="text-4xl md:text-8xl font-display font-black text-ink tracking-tighter leading-[1.1]">
                           "{result.axis3?.zenith || result.zenith}"
                         </p>
+                        
+                        {result.whyItMatters && (
+                          <div className="bg-accent text-bg p-8 md:p-12 rounded-3xl shadow-[16px_16px_0_0_rgba(74,103,65,0.1)]">
+                             <p className="font-mono text-[10px] uppercase tracking-[0.4em] font-black opacity-60 mb-4 italic">The Meaning</p>
+                             <p className="text-2xl md:text-4xl font-serif italic leading-relaxed">
+                               {result.whyItMatters}
+                             </p>
+                          </div>
+                        )}
                         <ELI9Card content={result.axis3?.zenith_eli9} />
                       </motion.div>
                     )}
@@ -2503,38 +2470,43 @@ function UnderstandableEngine() {
                     {axiomStep === 5 && (
                       <motion.div 
                         key="step5"
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        className="text-center space-y-8 md:space-y-12 py-6 md:py-20 w-full h-full flex flex-col justify-start md:justify-center overflow-y-auto no-scrollbar px-1"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center space-y-12 py-20"
                       >
-                        <div className="h-1.5 w-16 md:w-24 bg-accent mx-auto rounded-full" />
-                        <h3 className="text-3xl md:text-6xl font-display font-medium tracking-tight text-ink">Clarity Gained?</h3>
-                        <p className="text-lg md:text-3xl font-sans opacity-40 max-w-2xl mx-auto leading-relaxed">
-                          Does this concept now sit beautifully in your mind?
+                        <div className="h-2 w-24 bg-accent mx-auto rounded-full" />
+                        <h3 className="text-4xl md:text-7xl font-display font-black uppercase text-ink tracking-tighter">Clarity Gained?</h3>
+                        <p className="text-xl md:text-4xl font-serif italic text-ink/60 max-w-2xl mx-auto leading-tight">
+                          Does this concept now sit beautifully in your mind, or should we shift its perspective?
                         </p>
                         
-                        <div className="flex flex-col md:flex-row gap-4 md:gap-6 justify-center mt-6 md:mt-12">
+                        <div className="flex flex-col md:flex-row gap-6 justify-center mt-12">
                            <button 
                              onClick={cyclePerspective}
-                             className="px-6 py-4 md:px-12 md:py-6 rounded-2xl border border-accent/30 text-accent font-mono text-xs md:text-sm uppercase tracking-widest font-bold hover:bg-accent hover:text-bg transition-all flex items-center justify-center gap-3 md:gap-4 group"
+                             className="px-12 py-8 rounded-3xl border-4 border-accent text-accent font-mono text-lg uppercase tracking-widest font-black hover:bg-accent hover:text-bg transition-all flex items-center justify-center gap-4 group"
                            >
-                              <RotateCcw className={`w-5 h-5 md:w-5 md:h-5 transition-transform group-hover:rotate-[-180deg] ${isRefining ? "animate-spin" : ""}`} />
+                              <RotateCcw className={`w-6 h-6 transition-transform group-hover:rotate-[-180deg] ${isRefining ? "animate-spin" : ""}`} />
                               Shift Lens
                            </button>
                            <button 
                              onClick={lockInTruth}
                              disabled={saving || saveSuccess}
-                             className="px-6 py-4 md:px-12 md:py-8 bg-black text-white hover:bg-accent rounded-2xl flex items-center justify-between gap-8 md:gap-16 group transition-all active:scale-95 shadow-lg"
+                             className="px-12 py-10 bg-accent border-4 border-accent text-bg rounded-4xl flex items-center justify-between gap-12 group hover:bg-bg hover:text-accent transition-all active:scale-95 shadow-[20px_20px_0_0_rgba(74,103,65,0.1)]"
                            >
-                              <AhaSparkle active={showSparkle} status={affirmationStatus} concept={concept} />
-                              <div className="flex flex-col items-start text-left">
-                                <span className="font-mono text-[9px] uppercase tracking-[0.2em] font-bold opacity-30 italic">Synthesis Complete</span>
-                                <span className="font-display text-lg md:text-3xl font-medium">Understand</span>
-                              </div>
-                              <ArrowRight className="w-5 h-5 md:w-6 md:h-6 opacity-40 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                             <AhaSparkle active={showSparkle} status={affirmationStatus} concept={concept} />
+                             <div className="flex flex-col items-start text-left">
+                               <span className="font-mono text-[10px] uppercase tracking-[0.4em] font-black opacity-40 italic">Final Step</span>
+                               <span className="font-display text-2xl md:text-4xl font-black uppercase">Understanding locked in!</span>
+                             </div>
+                             <div className="w-16 h-16 bg-bg flex items-center justify-center rounded-full text-accent group-hover:bg-accent group-hover:text-bg transition-all">
+                               <ArrowRight className="w-10 h-10" strokeWidth={3} />
+                             </div>
+                           </button>
+                           <button 
+                            onClick={() => { setConcept(""); setResult(null); }}
+                            className="px-12 py-8 rounded-3xl border-4 border-ink font-mono text-lg uppercase tracking-widest font-black hover:bg-ink hover:text-bg transition-all"
+                           >
+                              Explore Next Topic →
                            </button>
                         </div>
                       </motion.div>
@@ -2545,50 +2517,50 @@ function UnderstandableEngine() {
                         key="step6"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center space-y-10 md:space-y-16 py-10 md:py-24"
+                        className="text-center space-y-16 py-24"
                       >
                          <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 md:w-24 md:h-24 bg-accent/5 rounded-full flex items-center justify-center mb-6 md:mb-10 border border-accent/20 animate-pulse">
-                               <CheckCircle2 className="w-10 h-10 md:w-12 md:h-12 text-accent" />
+                            <div className="w-32 h-32 bg-accent/10 rounded-full flex items-center justify-center mb-10 border-4 border-accent/20 animate-bounce">
+                               <CheckCircle2 className="w-16 h-16 text-accent" />
                             </div>
-                            <h3 className="text-3xl md:text-6xl font-display font-medium tracking-tight text-ink mb-3 md:mb-4">Integration Complete</h3>
-                            <p className="text-base md:text-2xl font-sans opacity-40 max-w-xl mx-auto leading-relaxed px-4">
-                              This concept has been successfully synthesized and woven into your global tapestry of understanding.
+                            <h3 className="text-5xl md:text-8xl font-display font-black uppercase text-ink tracking-tighter mb-6">Integration Complete</h3>
+                            <p className="text-2xl md:text-4xl font-serif italic text-ink/60 max-w-3xl mx-auto leading-tight">
+                              This concept has been successfully synthesized and woven into the global tapestry of understanding.
                             </p>
                          </div>
 
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto px-4 md:px-0">
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                             <button 
                               onClick={() => { setConcept(""); setResult(null); setAxiomStep(0); }}
-                              className="group p-6 md:p-8 bg-surface border border-border hover:border-accent rounded-2xl transition-all hover:shadow-lg text-left"
+                              className="group p-10 bg-bg border-4 border-current/5 hover:border-accent rounded-[2.5rem] transition-all hover:-translate-y-2 text-left"
                             >
-                               <div className="w-8 h-8 md:w-10 md:h-10 bg-accent/5 rounded-xl flex items-center justify-center mb-4 md:mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
-                                 <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                               <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
+                                 <Plus className="w-6 h-6" />
                                </div>
-                               <h4 className="text-base md:text-lg font-medium tracking-tight mb-1 md:mb-2">Next Inquiry</h4>
-                               <p className="text-[10px] md:text-xs opacity-40 font-sans italic">Synthesize a new perspective.</p>
+                               <h4 className="text-2xl font-black uppercase tracking-tight mb-2">Next Concept</h4>
+                               <p className="text-sm opacity-50 font-sans italic">Clear your mind and explore a fresh new idea.</p>
                             </button>
 
                             <button 
                               onClick={() => { setShowIndex(true); setConcept(""); setResult(null); setAxiomStep(0); }}
-                              className="group p-6 md:p-8 bg-surface border border-border hover:border-accent rounded-2xl transition-all hover:shadow-lg text-left"
+                              className="group p-10 bg-bg border-4 border-current/5 hover:border-accent rounded-[2.5rem] transition-all hover:-translate-y-2 text-left"
                             >
-                               <div className="w-8 h-8 md:w-10 md:h-10 bg-accent/5 rounded-xl flex items-center justify-center mb-4 md:mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
-                                 <LayoutDashboard className="w-4 h-4 md:w-5 md:h-5" />
+                               <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
+                                 <LayoutDashboard className="w-6 h-6" />
                                </div>
-                               <h4 className="text-base md:text-lg font-medium tracking-tight mb-1 md:mb-2">Private Vault</h4>
-                               <p className="text-[10px] md:text-xs opacity-40 font-sans italic">View your Established Cognitive Records.</p>
+                               <h4 className="text-2xl font-black uppercase tracking-tight mb-2">Visit Vault</h4>
+                               <p className="text-sm opacity-50 font-sans italic">See how this truth fits among the other established records.</p>
                             </button>
 
                             <button 
                               onClick={() => { setShowDiscovery(true); setConcept(""); setResult(null); setAxiomStep(0); }}
-                              className="group p-6 md:p-8 bg-surface border border-border hover:border-accent rounded-2xl transition-all hover:shadow-lg text-left"
+                              className="group p-10 bg-bg border-4 border-current/5 hover:border-accent rounded-[2.5rem] transition-all hover:-translate-y-2 text-left"
                             >
-                               <div className="w-8 h-8 md:w-10 md:h-10 bg-accent/5 rounded-xl flex items-center justify-center mb-4 md:mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
-                                 <Globe className="w-4 h-4 md:w-5 md:h-5" />
+                               <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 text-accent group-hover:bg-accent group-hover:text-bg transition-colors">
+                                 <Globe className="w-6 h-6" />
                                </div>
-                               <h4 className="text-base md:text-lg font-medium tracking-tight mb-1 md:mb-2">Global Index</h4>
-                               <p className="text-[10px] md:text-xs opacity-40 font-sans italic">Explore Established Community Nodes.</p>
+                               <h4 className="text-2xl font-black uppercase tracking-tight mb-2">Discovery Hub</h4>
+                               <p className="text-sm opacity-50 font-sans italic">Enter the collective brain and see what's trending now.</p>
                             </button>
                          </div>
                       </motion.div>
@@ -2598,108 +2570,130 @@ function UnderstandableEngine() {
 
                 {/* AXIOM CONTROLS */}
                 {axiomStep < 5 && (
-                  <div className="shrink-0 mt-4 md:mt-12 flex gap-3 md:gap-4 h-14 md:h-32 mb-4">
-                    {axiomStep > 0 && (
+                  <div className="mt-20 flex gap-4 h-24 md:h-32">
+                    {axiomStep > 1 && (
                       <button 
-                        onClick={() => setViewStep(axiomStep - 1)}
-                        className="flex-1 bg-surface border border-border text-ink rounded-2xl flex flex-col items-center justify-center hover:bg-accent/5 transition-all group"
+                        onClick={refineCurrentAxiom}
+                        disabled={isRefining}
+                        className="flex-[1] bg-soft-red/5 border-4 border-soft-red/20 text-soft-red rounded-3xl flex flex-col items-center justify-center hover:bg-soft-red hover:text-white transition-all group disabled:opacity-50"
                       >
-                        <ChevronLeft className="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:-translate-x-1 transition-all" />
-                        <span className="font-mono text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-30">Back</span>
+                        <RotateCcw className={`w-6 h-6 mb-2 ${isRefining ? "animate-spin" : "group-hover:rotate-[-45deg] transition-transform"}`} />
+                        <span className="font-mono text-[10px] md:text-xs uppercase tracking-widest font-black">Confusing</span>
                       </button>
                     )}
                     <button 
-                      id={`axiom-next-btn-${axiomStep}`}
                       onClick={async () => {
                         await recordStepProgress(axiomStep);
-                        setViewStep(axiomStep + 1);
+                        setAxiomStep(prev => prev + 1);
                       }}
-                      className="flex-[3] bg-black text-white hover:bg-accent border border-white/10 rounded-2xl flex items-center justify-between px-6 md:px-16 transition-all group active:scale-95 relative overflow-hidden shadow-lg"
+                      className="flex-[2] bg-accent border-4 border-accent text-bg rounded-3xl flex items-center justify-between px-10 md:px-16 hover:bg-bg hover:text-accent transition-all group active:scale-95 relative overflow-hidden"
                     >
-                      <div className="flex flex-col items-start leading-none gap-0.5 md:gap-1">
-                        <span className="font-mono text-[8px] md:text-[9px] uppercase tracking-[0.2em] font-bold opacity-30 italic">Step {axiomStep + 1}</span>
-                        <span className="font-display text-base md:text-2xl font-medium">Continue</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-mono text-[10px] md:text-xs uppercase tracking-widest font-black opacity-60">I Understand</span>
+                        <span className="font-display text-xl md:text-3xl font-black uppercase">Proceed</span>
                       </div>
-                      <ArrowRight className="w-4 h-4 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform opacity-40 group-hover:opacity-100" />
+                      <ArrowRight className="w-8 h-8 md:w-12 md:h-12 group-hover:translate-x-4 transition-transform" strokeWidth={4} />
                     </button>
                   </div>
                 )}
               </motion.div>
-            </div>
-          </motion.section>
-        )}
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center h-full text-center"
+              >
+                <div className="flex flex-col items-center">
+                  {error ? (
+                    <motion.div 
+                      key="error-state"
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="max-w-md p-16 border-2 transition-all relative overflow-hidden bg-red-500/10 border-red-500/40"
+                    >
+                      <div className="absolute top-0 left-0 w-full h-1 bg-red-500" />
+                      <AlertTriangle className="w-12 h-12 text-red-500 mb-10 opacity-80" strokeWidth={2.5} />
+                      <h3 className="font-mono text-lg uppercase tracking-[0.5em] mb-12 font-black text-red-500">
+                        Synchrony Failure // Flux 429
+                      </h3>
+                      <p className={`font-sans font-bold text-2xl leading-relaxed mb-16
+                        ${theme === "studio" ? "text-ink" : "text-bg"}
+                      `}>
+                        {error}
+                      </p>
+                      <button 
+                        onClick={() => {
+                          setError(null);
+                          setTimeout(understandTopic, 100);
+                        }}
+                        className={`w-full font-mono text-lg uppercase tracking-[0.3em] px-10 py-8 transition-all border-4 font-black shadow-[12px_12px_0_0_rgba(239,68,68,0.2)] rounded-xl
+                          ${theme === "studio" ? "bg-red-500 border-red-500 text-bg hover:bg-bg hover:text-red-500" : "border-ink text-ink hover:bg-ink hover:text-bg"}
+                        `}
+                      >
+                        Re-initialize Link →
+                      </button>
+                    </motion.div>
+                  ) : loading ? (
+                    <>
+                      <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mb-6 border border-accent/20">
+                        <div className="w-4 h-4 rounded-full border-2 border-accent animate-ping" />
+                      </div>
+                      <div className="flex gap-4 mb-4 font-mono text-xs uppercase tracking-widest font-black">
+                        <span className="animate-pulse text-accent uppercase tracking-[0.2em]">Thinking about your topic</span>
+                        <div className="flex gap-1 items-center">
+                          <span className="animate-bounce">.</span>
+                          <span className="animate-bounce [animation-delay:0.2s]">.</span>
+                          <span className="animate-bounce [animation-delay:0.4s]">.</span>
+                        </div>
+                      </div>
+                      <span className="font-mono text-xs text-ink font-black uppercase tracking-[0.5em]">Building your explanation</span>
+                    </>
+                  ) : (
+                    null
+                  )}
+                  {user && savedUnderstandables.length > 0 && !loading && (
+                    <div className="mt-12 md:mt-24 space-y-6">
+                      <p className="font-sans text-xl md:text-2xl font-bold opacity-60">
+                        Ready for a new adventure?
+                      </p>
+                      <button 
+                        onClick={() => {
+                          const surpriseTopics = [
+                            "The Voynich Manuscript",
+                            "The Great Attractor",
+                            "Panpsychism",
+                            "Strange Attractors in Chaos Theory",
+                            "The Geometry of Music",
+                            "Bioluminescence in the Deep Ocean",
+                            "The Overview Effect",
+                            "The Fermi Paradox",
+                            "The Antikythera Mechanism",
+                            "Quantum Entanglement",
+                            "Cybernetics in the Soviet Union",
+                            "The Library of Babel",
+                            "Fractals in Nature",
+                            "The Philosophy of Time",
+                            "Dark Matter vs Dark Energy",
+                            "Microbiome-Brain Connection",
+                            "The History of Zero"
+                          ];
+                          const randomTopic = surpriseTopics[Math.floor(Math.random() * surpriseTopics.length)];
+                          understandTopic(randomTopic);
+                        }}
+                        className="font-sans text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-[0.2em] px-12 py-10 transition-all border-4 shadow-[12px_12px_0_0_current] hover:translate-x-[-6px] hover:translate-y-[-6px] hover:shadow-[16px_16px_0_0_current] active:translate-x-0 active:translate-y-0 active:shadow-[6px_6px_0_0_current] bg-accent border-accent text-bg rounded-[2rem]"
+                      >
+                        Surprise me! →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
-
-          {/* VIEW: VAULT / INDEX */}
-          {showIndex && (
-            <motion.section 
-              key="view-index"
-              variants={viewVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="fixed inset-0 z-[80] bg-bg overflow-y-auto flex flex-col p-6 md:p-12 lg:px-24 lg:py-24"
-            >
-              <div className="max-w-7xl mx-auto w-full flex flex-col h-full">
-                <div className="mb-12 flex flex-col gap-8 border-b-4 border-current pb-12">
-                   <div className="flex flex-col md:flex-row items-center justify-between gap-8 text-ink">
-                      <h2 className="text-4xl md:text-5xl font-display font-medium tracking-tight">The Vault</h2>
-                      <button onClick={() => setShowIndex(false)} className="w-full md:w-auto font-mono text-[10px] md:text-xs uppercase tracking-widest font-bold border border-ink/20 px-6 py-3 hover:bg-ink hover:text-bg transition-all rounded-xl">← Back</button>
-                   </div>
-                   <div className="flex flex-col md:flex-row gap-6">
-                     <div className="flex-1 relative">
-                       <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
-                       <input 
-                         type="text" 
-                         placeholder="Search Vault..." 
-                         value={indexSearch} 
-                         onChange={(e) => setIndexSearch(e.target.value)} 
-                         className="w-full bg-surface border border-border shadow-sm rounded-2xl py-4 pl-14 pr-6 font-mono text-xs uppercase tracking-widest outline-none focus:border-accent transition-colors text-ink" 
-                       />
-                     </div>
-                     <div className="flex bg-current/5 border border-border rounded-2xl p-1.5 w-full md:w-auto shrink-0">
-                        <button 
-                          onClick={() => setIndexType("personal")} 
-                          className={`flex-1 md:w-32 py-2.5 font-mono text-[10px] uppercase tracking-widest font-bold transition-all rounded-xl ${indexType === "personal" ? "bg-bg shadow-sm text-ink" : "text-ink/40 hover:text-ink/80"}`}
-                        >Personal</button>
-                        <button 
-                          onClick={() => setIndexType("global")} 
-                          className={`flex-1 md:w-32 py-2.5 font-mono text-[10px] uppercase tracking-widest font-bold transition-all rounded-xl ${indexType === "global" ? "bg-bg shadow-sm text-ink" : "text-ink/40 hover:text-ink/80"}`}
-                        >Global</button>
-                     </div>
-                   </div>
-                </div>
-                <div className="flex flex-col border border-current/10 rounded-3xl overflow-hidden mb-32 bg-surface shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)]">
-                   {indexType === "personal" ? (
-                     <>
-                       {savedUnderstandables.filter(ax => (ax.concept || "").toLowerCase().includes(indexSearch.toLowerCase())).map((ax, i) => renderConceptCard(ax, i, "vault", "row"))}
-                       {savedUnderstandables.filter(ax => (ax.concept || "").toLowerCase().includes(indexSearch.toLowerCase())).length === 0 && (
-                          <div className="p-20 text-center font-mono opacity-40 uppercase tracking-widest text-sm">No concepts found in Vault.</div>
-                       )}
-                     </>
-                   ) : (
-                     <>
-                       {globalLogs.filter(ax => (ax.concept || "").toLowerCase().includes(indexSearch.toLowerCase())).map((ax, i) => renderConceptCard(ax, i, "global", "row"))}
-                       {globalLogs.filter(ax => (ax.concept || "").toLowerCase().includes(indexSearch.toLowerCase())).length === 0 && (
-                          <div className="p-20 text-center font-mono opacity-40 uppercase tracking-widest text-sm">No global concepts found.</div>
-                       )}
-                     </>
-                   )}
-                </div>
-              </div>
-            </motion.section>
-          )}
-
-          {/* Fallback for Errors / Empty (keeping outside unified for now as error state) */}
-          {!result && !showIndex && !showLibrary && !showDiscovery && error && (
-            <div className="fixed inset-0 z-[100] bg-bg flex flex-col items-center justify-center p-10 text-center">
-               <AlertTriangle className="w-16 h-16 text-red-500 mb-8" />
-               <h3 className="text-4xl font-display font-black uppercase mb-4">Error Encountered</h3>
-               <p className="text-xl font-serif italic text-ink/60 mb-12 max-w-md">{error}</p>
-               <button onClick={() => setError(null)} className="px-10 py-5 bg-ink text-bg rounded-2xl font-mono text-sm uppercase tracking-widest font-black hover:opacity-80">Close</button>
-            </div>
-          )}
-        </main>
+          </div>
+        </section>
+      </main>
 
       {/* FOOTER */}
         <footer className="px-16 py-12 flex justify-between items-center shrink-0 z-20 transition-all font-mono text-sm uppercase tracking-[0.4em] font-black bg-bg border-t border-border text-ink">
@@ -2714,14 +2708,6 @@ function UnderstandableEngine() {
                 {systemOnline === false ? "Knowledge Base Syncing..." : "Knowledge Base Online"}
               </span>
             </div>
-            <button 
-              id="footer-feedback-btn"
-              onClick={() => setShowFeedback(true)}
-              className="hidden lg:flex items-center gap-2 hover:text-accent transition-all group"
-            >
-              <MessageSquare size={14} className="group-hover:scale-110 transition-transform" />
-              <span>Feedback</span>
-            </button>
           </div>
           <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16 font-mono opacity-60">
              <button 
@@ -2751,18 +2737,16 @@ function UnderstandableEngine() {
       <AnimatePresence>
         {reportingConcept && (
           <motion.div 
-            key="reporting-concept-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-xl flex items-center justify-center p-6"
           >
              <motion.div 
-                               key="report-concept-modal-inner"
-                               initial={{ scale: 0.9, y: 20 }}
-                               animate={{ scale: 1, y: 0 }}
-                               className="w-full max-w-lg bg-bg border-4 border-soft-red/20 shadow-2xl rounded-[2.5rem] p-10 md:p-14 text-center"
-                             >
+               initial={{ scale: 0.9, y: 20 }}
+               animate={{ scale: 1, y: 0 }}
+               className="w-full max-w-lg bg-bg border-4 border-soft-red/20 shadow-2xl rounded-[2.5rem] p-10 md:p-14 text-center"
+             >
                 <div className="w-16 h-16 bg-soft-red/5 rounded-full flex items-center justify-center mx-auto mb-8">
                   <AlertTriangle className="w-8 h-8 text-soft-red" />
                 </div>
@@ -2809,20 +2793,20 @@ function UnderstandableEngine() {
           >
             <div className="flex justify-between items-center mb-10 md:mb-16">
               <div className="flex items-center gap-6">
-                <div className="w-12 h-12 bg-accent/5 text-accent rounded-xl flex items-center justify-center shadow-sm">
-                  <Globe className="w-5 h-5" />
+                <div className="w-12 h-12 bg-accent text-bg rounded-2xl flex items-center justify-center shadow-[6px_6px_0_0_rgba(0,0,0,0.1)]">
+                  <Globe className="w-6 h-6" />
                 </div>
                 <div>
-                   <h2 className="text-4xl md:text-5xl font-display font-medium tracking-tight leading-none mb-1">Global Index</h2>
-                  <p className="font-mono text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-bold opacity-30 whitespace-nowrap font-mono">Real-time Collective Awareness</p>
+                  <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-2">Discovery Hub</h2>
+                  <p className="font-mono text-[10px] md:text-xs uppercase tracking-[0.3em] font-black opacity-30 whitespace-nowrap">Real-time Collective Consciousness</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setShowDiscovery(false)}
-                  className="w-12 h-12 bg-surface text-ink/40 rounded-xl flex items-center justify-center hover:text-ink transition-colors border border-border shadow-sm"
+                  className="w-14 h-14 bg-current/5 rounded-2xl flex items-center justify-center hover:bg-current/10 transition-colors border-2 border-current/10"
                 >
-                  <Plus className="w-5 h-5 rotate-45" />
+                  <Plus className="w-6 h-6 rotate-45" />
                 </button>
               </div>
             </div>
@@ -2836,15 +2820,9 @@ function UnderstandableEngine() {
                   <div className="flex-1 h-px bg-current/5" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {globalLogs.length > 0 ? (
-                    [...globalLogs].sort((a,b) => (b.rank || 0) - (a.rank || 0)).slice(0, 3).map((ax, i) => (
+                  {[...globalLogs].sort((a,b) => (b.rank || 0) - (a.rank || 0)).slice(0, 3).map((ax, i) => (
                       renderConceptCard(ax, i, "discovery-top")
-                    ))
-                  ) : (
-                    <div className="col-span-full py-12 border-2 border-dashed border-current/10 rounded-2xl flex items-center justify-center font-mono text-[10px] uppercase tracking-widest opacity-30">
-                      Synchronizing with collective awareness...
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
 
@@ -2857,48 +2835,30 @@ function UnderstandableEngine() {
                       <div className="flex-1 h-px bg-current/5" />
                     </div>
                     <div className="space-y-6">
-                      {globalLogs.length > 0 ? (
-                        [...globalLogs].sort((a,b) => {
-                            const dateA = a.createdAt?.seconds || 0;
-                            const dateB = b.createdAt?.seconds || 0;
-                            return dateB - dateA;
-                        }).slice(0, 5).map((ax, i) => (
-                          <button
-                            key={`discovery-recent-${ax.id || ax.concept || 'none'}`}
-                            onClick={() => {
-                              setResult(ax.payload || ax);
-                              setConcept(ax.concept);
-                              setShowDiscovery(false);
-                              setAxiomStep(0);
-                              setShowIndex(false);
-                            }}
-                            className="w-full flex items-center p-6 bg-current/[0.02] border-2 border-current/5 rounded-2xl hover:border-accent hover:bg-bg transition-all group text-left"
-                          >
-                            <div className="w-10 h-10 bg-current/5 rounded-lg flex items-center justify-center mr-6 font-mono text-[10px] opacity-30">{(i+1).toString().padStart(2, '0')}</div>
-                            <div className="flex-1">
-                              <div className="flex justify-between items-start mb-1">
-                                <h4 className="font-black uppercase text-sm group-hover:text-accent transition-colors">{ax.concept}</h4>
-                                <button 
-                                  onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    setReportingConcept(ax.concept); 
-                                    setShowFeedback(true); 
-                                  }}
-                                  className="p-1 opacity-20 hover:opacity-100 hover:text-soft-red transition-all"
-                                >
-                                  <AlertTriangle size={12} />
-                                </button>
-                              </div>
-                              <p className="font-mono text-[9px] uppercase tracking-widest opacity-30">{ax.domain || "New Knowledge"}</p>
-                            </div>
-                            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0 text-accent" />
-                          </button>
-                        ))
-                      ) : (
-                        <div className="p-12 border-2 border-dashed border-current/10 rounded-2xl flex items-center justify-center font-mono text-[10px] uppercase tracking-widest opacity-30">
-                          Waiting for first synthesis...
-                        </div>
-                      )}
+                      {[...globalLogs].sort((a,b) => {
+                          const dateA = a.createdAt?.seconds || 0;
+                          const dateB = b.createdAt?.seconds || 0;
+                          return dateB - dateA;
+                      }).slice(0, 5).map((ax, i) => (
+                        <button
+                          key={`discovery-recent-${i}`}
+                          onClick={() => {
+                            setResult(ax.payload || ax);
+                            setConcept(ax.concept);
+                            setShowDiscovery(false);
+                            setAxiomStep(0);
+                            setShowIndex(false);
+                          }}
+                          className="w-full flex items-center p-6 bg-current/[0.02] border-2 border-current/5 rounded-2xl hover:border-accent hover:bg-bg transition-all group text-left"
+                        >
+                          <div className="w-10 h-10 bg-current/5 rounded-lg flex items-center justify-center mr-6 font-mono text-[10px] opacity-30">{(i+1).toString().padStart(2, '0')}</div>
+                          <div className="flex-1">
+                            <h4 className="font-black uppercase text-sm mb-1 group-hover:text-accent transition-colors">{ax.concept}</h4>
+                            <p className="font-mono text-[9px] uppercase tracking-widest opacity-30">{ax.domain || "New Knowledge"}</p>
+                          </div>
+                          <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0 text-accent" />
+                        </button>
+                      ))}
                     </div>
                   </div>
 
@@ -2954,62 +2914,6 @@ function UnderstandableEngine() {
           title="Terms of Synthesis"
           type="terms"
         />
-
-        <FeedbackModal 
-          isOpen={showFeedback}
-          onClose={() => setShowFeedback(false)}
-          context={
-            showLibrary ? "Library" :
-            selectedItem ? `IndexCard: ${selectedItem.title}` :
-            showDiscovery ? "Discovery" : 
-            showIndex ? "Index" : 
-            result ? "Axiom View" : 
-            loading ? "Loading" : 
-            showAccount ? "Account" : 
-            "Home"
-          }
-          topic={selectedItem?.title || concept}
-          step={axiomStep}
-        />
-
-        <AnimatePresence>
-          {showLibrary && (
-            <Library 
-              key="library-modal-component"
-              onClose={() => setShowLibrary(false)}
-              onSelectItem={(item, card) => {
-                setShowLibrary(false);
-                setConcept(item.title);
-                understandTopic(item.title);
-              }}
-              showFeedback={() => setShowFeedback(true)}
-            />
-          )}
-        </AnimatePresence>
-
-        <IndexCard 
-          item={selectedItem}
-          card={selectedCard}
-          isOpen={!!selectedItem && !!selectedCard}
-          onClose={() => {
-            setSelectedItem(null);
-            setSelectedCard(null);
-          }}
-          showFeedback={() => setShowFeedback(true)}
-        />
-
-        {/* Persistent Feedback Toggle */}
-        <div className="fixed bottom-6 right-6 z-[250]">
-          <Tooltip text="Report bug or give feedback">
-            <button
-              id="global-feedback-btn"
-              onClick={() => setShowFeedback(true)}
-              className="w-12 h-12 bg-ink text-bg rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
-            >
-              <MessageSquare size={20} className="group-hover:rotate-12 transition-transform" />
-            </button>
-          </Tooltip>
-        </div>
       </AnimatePresence>
 
       <style>{`
