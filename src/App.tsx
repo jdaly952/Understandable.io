@@ -1112,7 +1112,7 @@ function UnderstandableEngine() {
         .filter(v => !userConcepts.has(v.concept.toLowerCase().trim()))
         .sort(() => Math.random() - 0.5);
     
-    for (let i = 0; i < Math.min(2, availableVault.length); i++) {
+    for (let i = 0; i < 2 && availableVault.length > 0; i++) {
         const item = availableVault.pop();
         if (item) selected.push({ concept: item.concept, isVault: true });
     }
@@ -1137,11 +1137,66 @@ function UnderstandableEngine() {
     refreshSuggestions();
   }, [globalLogs, vaultSuggestions, savedUnderstandables]);
 
-  const renderConceptCard = (ax: any, i: number, group: string) => {
-    const conceptId = ax.id || ax.concept;
-    const uniqueKey = `card-${group}-${conceptId}-${indexType}-${i}`;
+  const renderConceptCard = (ax: any, i: number, group: string, layout: "card" | "row" = "card") => {
+    const cardId = ax.id || `temp-${ax.concept}-${i}`;
+    const uniqueKey = `${group}-${cardId}-${indexType}-${i}`;
     const tags = ax.tags || ax.payload?.tags || [];
     const relationships = ax.relationships || ax.payload?.relatedConcepts || [];
+
+    if (layout === "row") {
+      return (
+        <button
+          key={uniqueKey}
+          onClick={() => {
+            setResult(ax.payload || ax);
+            setConcept(ax.concept);
+            setShowIndex(false);
+            setAxiomStep(0);
+          }}
+          className="group relative flex items-center justify-between p-6 transition-all bg-bg border-b border-current/10 hover:border-current/30 hover:bg-current/5 text-left w-full"
+        >
+          <div className="flex items-center gap-6 flex-1 min-w-0">
+             <div className="hidden sm:flex w-12 h-12 shrink-0 bg-current/5 rounded-2xl items-center justify-center font-mono text-xl">
+               {ax.domainEmoji || "🌀"}
+             </div>
+             <div className="flex flex-col gap-1 min-w-0">
+               <div className="flex items-center gap-3">
+                 <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight group-hover:text-accent transition-colors truncate">
+                   {ax.concept}
+                 </h3>
+                 {ax.affirmationCount > 10 && (
+                   <span className="font-mono text-[8px] bg-accent/10 text-accent px-2 py-0.5 rounded-full font-bold uppercase shrink-0">Core</span>
+                 )}
+               </div>
+               <p className="text-sm opacity-60 font-sans italic truncate">
+                 "{(ax.payload?.zenith || ax.zenith || ax.payload?.hook || ax.hook || "Synthesis complete.")}"
+               </p>
+             </div>
+          </div>
+          
+          <div className="flex items-center gap-6 shrink-0 pl-6 border-l border-current/10">
+            {tags.length > 0 && (
+              <div className="hidden lg:flex gap-2">
+                {tags.slice(0, 2).map((tag: string, tagIdx: number) => (
+                  <span key={`${tag}-${tagIdx}`} className="font-mono text-[8px] uppercase tracking-widest border border-current/20 px-2 py-0.5 rounded-full opacity-60">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => handleShare(e, ax)}
+                className={`p-2 rounded-full transition-all ${copiedId === (ax.id || ax.concept) ? "text-green-500" : "text-current/40 hover:text-accent hover:bg-current/5"}`}
+              >
+                {copiedId === (ax.id || ax.concept) ? <span className="font-mono text-[8px] font-black">COPIED</span> : <Share2 className="w-4 h-4" />}
+              </button>
+              <ArrowRight className="w-5 h-5 text-accent opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
+            </div>
+          </div>
+        </button>
+      );
+    }
 
     return (
       <button
@@ -1210,7 +1265,7 @@ function UnderstandableEngine() {
         {(ax.whyItMatters || ax.payload?.whyItMatters) && (
           <div className="mb-8 p-6 bg-accent/[0.03] border-l-4 border-accent rounded-r-2xl">
             <p className="font-mono text-[9px] uppercase tracking-[0.3em] font-black opacity-30 mb-2 whitespace-nowrap">Impact Analysis</p>
-            <p className="text-xs md:text-sm font-sans leading-relaxed opacity-70 italic line-clamp-2">{ax.whyItMatters || ax.payload.whyItMatters}</p>
+            <p className="text-xs md:text-sm font-sans leading-relaxed opacity-70 italic line-clamp-2">{ax.whyItMatters || ax.payload?.whyItMatters}</p>
           </div>
         )}
 
@@ -1369,7 +1424,10 @@ function UnderstandableEngine() {
         );
         unsubscribeIndex = onSnapshot(q, (snapshot) => {
           const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setSavedUnderstandables(docs);
+          const uniqueDocs = docs.filter((doc, index, self) =>
+            index === self.findIndex((t) => t.id === doc.id)
+          );
+          setSavedUnderstandables(uniqueDocs);
           setLoadingIndex(false);
         }, (err) => {
           handleFirestoreError(err, OperationType.LIST, "saved_topics");
@@ -2595,8 +2653,11 @@ function UnderstandableEngine() {
                      </div>
                    </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
-                  {savedUnderstandables.filter(ax => ax.concept.toLowerCase().includes(indexSearch.toLowerCase())).map((ax, i) => renderConceptCard(ax, i, "vault"))}
+                <div className="flex flex-col border border-current/10 rounded-3xl overflow-hidden mb-32 bg-surface shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)]">
+                  {savedUnderstandables.filter(ax => ax.concept.toLowerCase().includes(indexSearch.toLowerCase())).map((ax, i) => renderConceptCard(ax, i, "vault", "row"))}
+                  {savedUnderstandables.filter(ax => ax.concept.toLowerCase().includes(indexSearch.toLowerCase())).length === 0 && (
+                     <div className="p-20 text-center font-mono opacity-40 uppercase tracking-widest text-sm">No concepts found in Vault.</div>
+                  )}
                 </div>
               </div>
             </motion.section>

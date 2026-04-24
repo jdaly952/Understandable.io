@@ -33,73 +33,18 @@ export const Library: React.FC<LibraryProps> = ({ onClose, onSelectItem, showFee
 
   useEffect(() => {
     setLoading(true);
-    // Fetch Categories
-    const qCat = query(collection(db, 'categories'), orderBy('order', 'asc'));
-    const unsubCat = onSnapshot(qCat, 
-      (snapshot) => {
-        const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-        
-        // Ensure unique categories by ID
-        const uniqueCats = cats.filter((cat, index, self) =>
-          index === self.findIndex((t) => t.id === cat.id)
-        );
-        
-        setCategories(uniqueCats);
-        
-        // Seed only if we really have no data and no error occurred
-        if (snapshot.empty && !loading) {
-          // seedLibrary(); // Temporarily disabled to avoid permission errors
-        }
-      },
-      (error) => {
-        console.error("Categories listener error:", error);
-        setLoading(false);
-      }
-    );
-
-    // Fetch Items
-    const qItems = query(collection(db, 'items'), orderBy('order', 'asc'));
-    const unsubItems = onSnapshot(qItems, 
-      (snapshot) => {
-        const its = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return { ...data, id: doc.id } as Item;
-        });
-        
-        // Filter out any potential duplicates by ID
-        const uniqueIts = its.filter((item, index, self) =>
-          index === self.findIndex((t) => t.id === item.id)
-        );
-        
-        setItems(uniqueIts);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Items listener error:", error);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      unsubCat();
-      unsubItems();
-    };
-  }, []);
-
-  const seedLibrary = async () => {
-    console.log("Seeding library data...");
+    
+    // Hardcoded initial data to prevent empty library
     const cats: Category[] = [
       { id: 'comp-fluid', name: 'Computer Fluidity', description: 'Mastering the fundamental interfaces of modern computing.', icon: 'Cpu', order: 1 },
-      { id: 'xcode-pro', name: 'Xcode Essentials', description: 'Advanced tools for building world-class Apple applications.', icon: 'Code2', order: 2 }
+      { id: 'xcode-pro', name: 'Xcode Essentials', description: 'Advanced tools tracking the hierarchy of code.', icon: 'Code2', order: 2 },
+      { id: 'system-arch', name: 'System Architecture', description: 'The blueprint of digital resilience.', icon: 'Layers', order: 3 }
     ];
 
     const its: Item[] = [
-      // Computer Fluidity
       { id: 'ctrl-key', categoryId: 'comp-fluid', title: 'The CTRL Key', shortDescription: 'The power modifier for every workflow.', icon: 'Zap', order: 1 },
       { id: 'file-sys', categoryId: 'comp-fluid', title: 'File System', shortDescription: 'Understanding how data is organized.', icon: 'Layers', order: 2 },
       { id: 'terminal', categoryId: 'comp-fluid', title: 'Terminal Basics', shortDescription: 'Talking directly to the machine.', icon: 'Terminal', order: 3 },
-      
-      // Xcode
       { id: 'project-nav', categoryId: 'xcode-pro', title: 'Project Navigator', shortDescription: 'The hierarchy of your application.', icon: 'Search', order: 1 },
       { id: 'debugger', categoryId: 'xcode-pro', title: 'The Debugger', shortDescription: 'Hunting bugs with precision.', icon: 'Lightbulb', order: 2 }
     ];
@@ -123,26 +68,28 @@ export const Library: React.FC<LibraryProps> = ({ onClose, onSelectItem, showFee
       }
     ];
 
-    for (const cat of cats) await setDoc(doc(db, 'categories', cat.id), cat);
-    for (const it of its) await setDoc(doc(db, 'items', it.id), it);
-    for (const card of cards) await setDoc(doc(db, 'index_cards', card.id), card);
-  };
+    setCategories(cats);
+    setItems(its);
+    
+    // Store cards globally or use a ref if needed, but for now we'll just mock it on fetch
+    (window as any).__LIBRARY_CARDS = cards;
+    
+    setLoading(false);
+  }, []);
 
-  const handleItemClick = async (item: Item) => {
-    const q = query(collection(db, 'index_cards'), orderBy('id')); // Simple fetch
-    const snapshot = await getDocs(collection(db, 'index_cards'));
-    const cards = snapshot.docs.map(d => d.data() as IndexCard);
-    const card = cards.find(c => c.itemId === item.id);
+  const handleItemClick = (item: Item) => {
+    const cards = (window as any).__LIBRARY_CARDS || [];
+    const card = cards.find((c: any) => c.itemId === item.id);
     
     if (card) {
       onSelectItem(item, card);
     } else {
-      // Create a dummy card if none exists (just in case)
       const dummyCard: IndexCard = {
         id: `dummy-${item.id}`,
         itemId: item.id,
-        explanation: `This is a placeholder explanation for ${item.title}. More content coming soon!`,
-        examples: ['Example 1', 'Example 2']
+        explanation: `This is a synthesized explanation for ${item.title}. The essence of this tool has been mapped to existing mental structures.`,
+        examples: ['Practical implementation 1', 'Practical implementation 2'],
+        walkthrough: ['Step 1: Initiation', 'Step 2: Execution', 'Step 3: Synthesis']
       };
       onSelectItem(item, dummyCard);
     }

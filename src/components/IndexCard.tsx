@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Lightbulb, PlayCircle, Layers, ArrowRight, MessageSquare } from 'lucide-react';
+import { X, Lightbulb, PlayCircle, Layers, ArrowRight, MessageSquare, BookOpen, Zap } from 'lucide-react';
 import { Item, IndexCard as IndexCardType } from '../types';
 
 interface IndexCardProps {
@@ -67,6 +67,19 @@ export const IndexCard: React.FC<IndexCardProps> = ({ item, card, isOpen, onClos
                     {card.explanation}
                   </p>
                 </section>
+
+                {/* Impact / Why it Matters */}
+                {card.whyItMatters && (
+                  <section className="p-8 bg-accent/[0.03] border-l-8 border-accent rounded-3xl">
+                    <label className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] font-black mb-4 opacity-40">
+                      <Zap size={14} className="text-accent" />
+                      The "Why" Analysis
+                    </label>
+                    <p className="text-xl font-sans font-medium leading-relaxed italic text-ink/70">
+                      {card.whyItMatters}
+                    </p>
+                  </section>
+                )}
 
                 {/* 2. Examples */}
                 <section>
@@ -147,9 +160,3 @@ export const IndexCard: React.FC<IndexCardProps> = ({ item, card, isOpen, onClos
     </AnimatePresence>
   );
 };
-
-const BookOpen = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-  </svg>
-);

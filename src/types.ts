@@ -22,4 +22,5 @@ export interface IndexCard {
   examples: string[];
   walkthrough?: string[];
   relatedItems?: string[];
+  whyItMatters?: string;
 }
