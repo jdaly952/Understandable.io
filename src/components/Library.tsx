@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, query, orderBy, onSnapshot, getDocs, setDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, setDoc, getDoc, doc, serverTimestamp, limit } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Category, Item, IndexCard } from '../types';
+import { Category, Item, IndexCard, Concept } from '../types';
 import { 
   ChevronRight, 
   ArrowLeft, 
@@ -34,88 +34,76 @@ export const Library: React.FC<LibraryProps> = ({ onClose, onSelectItem, showFee
   useEffect(() => {
     setLoading(true);
     
-    // Hardcoded initial data to prevent empty library
-    const cats: Category[] = [
-      { id: 'dev-mastery', name: 'Software Mastery', description: 'Deep dives into engineering concepts.', icon: 'Code2', order: 1 },
-      { id: 'math-physics', name: 'Mathematics & Physics', description: 'The laws governing reality.', icon: 'Cpu', order: 2 },
-      { id: 'sys-design', name: 'System Architecture', description: 'The blueprint of robust pipelines.', icon: 'Layers', order: 3 },
-      { id: 'cognitive-sci', name: 'Cognitive Science', description: 'Understanding the human mind.', icon: 'Lightbulb', order: 4 },
-      { id: 'art-history', name: 'Art & History', description: 'The evolution of human expression.', icon: 'Code2', order: 5 }
-    ];
+    // Fetch categories from Firestore
+    const catQuery = query(collection(db, 'categories'), orderBy('order', 'asc'));
+    const unsubCats = onSnapshot(catQuery, (snap) => {
+      const cats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      setCategories(cats);
+    }, (err) => {
+      console.error("Failed to fetch categories:", err);
+    });
 
-    const its: Item[] = [
-      // Software Mastery
-      { id: 'closures', categoryId: 'dev-mastery', title: 'Closures', shortDescription: 'Functions that remember their birthplace.', icon: 'Zap', order: 1 },
-      { id: 'event-loop', categoryId: 'dev-mastery', title: 'The Event Loop', shortDescription: 'How single-threaded environments handle concurrency.', icon: 'Layers', order: 2 },
-      { id: 'recursion', categoryId: 'dev-mastery', title: 'Recursion', shortDescription: 'A function calling itself to break down problems.', icon: 'Terminal', order: 3 },
-      { id: 'pointers', categoryId: 'dev-mastery', title: 'Pointers', shortDescription: 'Variables that hold memory addresses.', icon: 'Search', order: 4 },
-      { id: 'functional-prog', categoryId: 'dev-mastery', title: 'Functional Programming', shortDescription: 'Using pure functions without side-effects.', icon: 'Code2', order: 5 },
-      
-      // Math & Physics
-      { id: 'relativity', categoryId: 'math-physics', title: 'General Relativity', shortDescription: 'Gravity as the bending of spacetime.', icon: 'Lightbulb', order: 1 },
-      { id: 'quantum-ent', categoryId: 'math-physics', title: 'Quantum Entanglement', shortDescription: 'Spooky action at a distance.', icon: 'Zap', order: 2 },
-      { id: 'calculus', categoryId: 'math-physics', title: 'Calculus', shortDescription: 'The mathematics of continuous change.', icon: 'Layers', order: 3 },
-      { id: 'chaos-theory', categoryId: 'math-physics', title: 'Chaos Theory', shortDescription: 'Sensitive dependence on initial conditions.', icon: 'Terminal', order: 4 },
+    // Fetch popular concepts to show in search or initial view
+    const conceptQuery = query(collection(db, 'concepts'), orderBy('rank', 'desc'), limit(20));
+    const unsubConcepts = onSnapshot(conceptQuery, (snap) => {
+      const its = snap.docs.map(doc => ({ 
+        id: doc.id, 
+        categoryId: doc.get('categoryId') || 'uncategorized',
+        title: doc.get('title'),
+        shortDescription: (doc.get('lastExplanation') as any)?.distillation || doc.get('title'),
+        icon: 'Zap',
+        order: doc.get('rank')
+      } as Item));
+      setItems(its);
+      setLoading(false);
+    }, (err) => {
+      console.error("Failed to fetch concepts:", err);
+      setLoading(false);
+    });
 
-      // System Architecture
-      { id: 'microservices', categoryId: 'sys-design', title: 'Microservices', shortDescription: 'Decoupled systems communicating via APIs.', icon: 'Cpu', order: 1 },
-      { id: 'load-balancing', categoryId: 'sys-design', title: 'Load Balancing', shortDescription: 'Distributing traffic to prevent overload.', icon: 'Layers', order: 2 },
-      { id: 'event-sourcing', categoryId: 'sys-design', title: 'Event Sourcing', shortDescription: 'Treating structural changes as immutable sequences.', icon: 'Terminal', order: 3 },
-
-      // Cognitive Science
-      { id: 'neuroplasticity', categoryId: 'cognitive-sci', title: 'Neuroplasticity', shortDescription: 'The brains ability to reorganize itself.', icon: 'Cpu', order: 1 },
-      { id: 'cognitive-bias', categoryId: 'cognitive-sci', title: 'Cognitive Biases', shortDescription: 'Systematic patterns of deviation from norm.', icon: 'Layers', order: 2 },
-      { id: 'theory-of-mind', categoryId: 'cognitive-sci', title: 'Theory of Mind', shortDescription: 'Understanding that others have distinct beliefs.', icon: 'Search', order: 3 },
-
-      // Art & History
-      { id: 'renaissance', categoryId: 'art-history', title: 'The Renaissance', shortDescription: 'The revival of classical learning.', icon: 'Lightbulb', order: 1 },
-      { id: 'impressionism', categoryId: 'art-history', title: 'Impressionism', shortDescription: 'Capturing the feeling of a moment.', icon: 'Zap', order: 2 },
-      { id: 'stoicism', categoryId: 'art-history', title: 'Stoicism', shortDescription: 'Ancient philosophy for emotional resilience.', icon: 'Terminal', order: 3 },
-    ];
-
-    const cards: IndexCard[] = [
-      { 
-        id: 'card-ctrl', 
-        itemId: 'ctrl-key', 
-        explanation: 'The Control key is a modifier key which, when pressed in conjunction with another key, performs a special operation. In the context of "Computer Fluidity", it is your primary tool for rapid execution without leaving the home row.',
-        examples: ['CTRL+C: Copy text to clipboard', 'CTRL+V: Paste from clipboard', 'CTRL+Z: Undo last action'],
-        walkthrough: ['1. Place your left pinky on the CTRL key.', '2. Press and hold.', '3. Tap the "C" key with your index finger.', '4. Release both. You have copied.'],
-        relatedItems: ['The Mouse', 'Keyboard Shortcuts']
-      },
-      {
-        id: 'card-project-nav',
-        itemId: 'project-nav',
-        explanation: 'The Project Navigator is the primary sidebar in Xcode where you manage your files, resources, and configuration. It is the mental map of your software architecture.',
-        examples: ['Finding .swift files', 'Managing Assets.xcassets', 'Organizing folders'],
-        walkthrough: ['1. Press CMD+1 to open it instantly.', '2. Use the filter bar at the bottom to find files.', '3. Drag and drop to reorganize.'],
-        relatedItems: ['Interface Builder', 'Build Settings']
-      }
-    ];
-
-    setCategories(cats);
-    setItems(its);
-    
-    // Store cards globally or use a ref if needed, but for now we'll just mock it on fetch
-    (window as any).__LIBRARY_CARDS = cards;
-    
-    setLoading(false);
+    return () => {
+      unsubCats();
+      unsubConcepts();
+    };
   }, []);
 
-  const handleItemClick = (item: Item) => {
-    const cards = (window as any).__LIBRARY_CARDS || [];
-    const card = cards.find((c: any) => c.itemId === item.id);
-    
-    if (card) {
-      onSelectItem(item, card);
-    } else {
+  const handleItemClick = async (item: Item) => {
+    try {
+      // Find the best explanation for this concept
+      // In the new structure, we can check the concept document's lastExplanation 
+      // or query the explanations subcollection.
+      const conceptRef = doc(db, 'concepts', item.id);
+      const conceptSnap = await getDoc(conceptRef);
+      
+      if (conceptSnap.exists()) {
+        const conceptData = conceptSnap.data() as Concept;
+        const payload = conceptData.lastExplanation;
+
+        if (payload) {
+          const indexCard: IndexCard = {
+            id: `card-${item.id}`,
+            itemId: item.id,
+            explanation: payload.distillation || payload.axis3?.zenith || "No summary available.",
+            examples: payload.payload?.examples || [],
+            walkthrough: payload.payload?.walkthrough || [],
+            relatedItems: payload.payload?.relatedConcepts || []
+          };
+          onSelectItem(item, indexCard);
+          return;
+        }
+      }
+
+      // Fallback
       const dummyCard: IndexCard = {
         id: `dummy-${item.id}`,
         itemId: item.id,
-        explanation: `This is a synthesized explanation for ${item.title}. The essence of this tool has been mapped to existing mental structures.`,
-        examples: ['Practical implementation 1', 'Practical implementation 2'],
-        walkthrough: ['Step 1: Initiation', 'Step 2: Execution', 'Step 3: Synthesis']
+        explanation: `Synthesizing details for ${item.title}...`,
+        examples: [],
+        walkthrough: []
       };
       onSelectItem(item, dummyCard);
+    } catch (err) {
+      console.error("Error loading concept details:", err);
     }
   };
 

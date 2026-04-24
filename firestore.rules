@@ -1,22 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // 0. Catch-All Deny
-    // ===============================================================
+    // Default deny
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // ===============================================================
-    // 1. Primitive Helpers
-    // ===============================================================
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
 
-    function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
     function incoming() {
@@ -27,153 +31,65 @@ service cloud.firestore {
       return resource.data;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    // --- Users ---
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false; // No mass listing of users
+      allow create: if isOwner(userId) 
+        && incoming().uid == userId 
+        && incoming().email == request.auth.token.email;
+      allow update: if isOwner(userId)
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().diff(existing()).affectedKeys().hasAny(['displayName', 'photoURL', 'preferredLearningStyle', 'lastActive']);
     }
 
-    // ===============================================================
-    // 2. Validation Blueprints
-    // ===============================================================
-    
-    function isValidUser(data) {
-      return data.uid is string && data.uid == request.auth.uid &&
-             data.email is string && data.email.size() <= 200 &&
-             (data.get('displayName', null) == null || (data.displayName is string && data.displayName.size() <= 100)) &&
-             (data.get('photoURL', null) == null || (data.photoURL is string && data.photoURL.size() <= 500)) &&
-             data.createdAt == request.time;
-    }
-
-    function isValidUnderstandable(data) {
-      return data.concept is string && data.concept.size() <= 500 &&
-             data.payload is map &&
-             data.createdAt == request.time &&
-             (data.get('uid', null) == null || (data.uid is string && (data.uid.size() <= 128)));
-    }
-
-    function isValidVote(data) {
-      return data.contentHash is string && data.contentHash.size() <= 128 &&
-             data.ups is int && data.downs is int &&
-             data.updatedAt == request.time;
-    }
-
-    function isValidGlobal(data) {
-      return data.concept is string && data.concept.size() <= 500 &&
-             data.rank is int &&
-             data.lastPayload is map &&
-             data.updatedAt == request.time;
-    }
-
-    function isValidCoupler(data) {
-      return data.uid == request.auth.uid &&
-             data.concept is string &&
-             data.step is int &&
-             data.content is string &&
-             data.timestamp == request.time &&
-             (data.get('whyItMatters', null) == null || data.whyItMatters is string) &&
-             (data.get('domain', null) == null || data.domain is string) &&
-             (data.get('domainEmoji', null) == null || data.domainEmoji is string);
-    }
-
-    function isValidAxiomVault(data) {
-      return data.concept is string &&
-             data.step is int &&
-             data.affirmationCount is int &&
-             data.content is string &&
-             (data.get('whyItMatters', null) == null || data.whyItMatters is string) &&
-             (data.get('label', null) == null || data.label is string) &&
-             (data.get('style', null) == null || data.style is string) &&
-             (data.get('domain', null) == null || data.domain is string) &&
-             (data.get('domainEmoji', null) == null || data.domainEmoji is string);
-    }
-
-    // ===============================================================
-    // 3. Collection Rules
-    // ===============================================================
-
-    match /axiom_vault/{axiomId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isValidAxiomVault(incoming());
-      allow update: if isSignedIn() && isValidAxiomVault(incoming()) && 
-                    incoming().diff(existing()).affectedKeys().hasAny(['affirmationCount', 'lastAffirmed', 'whyItMatters', 'domain', 'domainEmoji']);
-    }
-
-    match /concept_couplers/{couplerId} {
-      allow read: if isSignedIn() && (resource == null || resource.data.uid == request.auth.uid);
-      allow create: if isSignedIn() && isValidCoupler(incoming());
-      allow update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
-    }
-
-    match /_internal_/connection_test {
-      allow read: if true;
-    }
-
-    match /users/{uid} {
-      allow get: if isOwner(uid);
-      allow create: if isOwner(uid) && isValidUser(incoming());
-      allow update: if isOwner(uid) && isValidUser(incoming()) && 
-                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'email']);
-    }
-
-    match /saved_topics/{topicId} {
-      // Identity Locked Collection
-      // Handle document level get
-      allow get: if isSignedIn() && existing().get('uid', null) == request.auth.uid;
-      
-      // Handle collection queries (list)
-      // Every document in the result MUST have uid == request.auth.uid
-      allow list: if isSignedIn() && resource.data.get('uid', null) == request.auth.uid;
-      
-      allow create: if isSignedIn() && isValidUnderstandable(incoming()) && incoming().uid == request.auth.uid;
-      allow delete: if isSignedIn() && existing().get('uid', null) == request.auth.uid;
-    }
-
-    match /synthesis_logs/{logId} {
-      // History of public transmutations
-      allow get: if true;
-      allow list: if true;
-      allow create: if isValidUnderstandable(incoming());
-    }
-
-    match /global_index/{conceptId} {
-      allow read: if true;
-      allow write: if isSignedIn() && isValidGlobal(incoming());
-    }
-
-    match /community_votes/{voteId} {
-      allow read: if true;
-      allow create: if isValidVote(incoming());
-      allow update: if isValidVote(incoming());
-    }
-
-    match /reports/{reportId} {
-      allow create: if isSignedIn() && 
-                    incoming().concept is string && 
-                    incoming().concept.size() <= 500 &&
-                    incoming().uid == request.auth.uid &&
-                    incoming().createdAt == request.time;
-    }
-
-    match /feedback/{feedbackId} {
-      allow create: if (incoming().uid == null || incoming().uid == request.auth.uid) &&
-                    incoming().message is string &&
-                    incoming().message.size() <= 5000 &&
-                    incoming().createdAt == request.time;
-      allow read: if false; // Only admins or via console
-    }
-
+    // --- Categories ---
     match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if false; // Seeding happens via console or specially authorized logic
+      allow read: if true; // Publicly readable
+      allow write: if false; // System only
     }
 
-    match /items/{itemId} {
+    // --- Concepts ---
+    match /concepts/{conceptId} {
       allow read: if true;
-      allow write: if false;
+      allow create: if isSignedIn() && isValidId(conceptId);
+      allow update: if isSignedIn() 
+        && incoming().id == existing().id
+        && incoming().diff(existing()).affectedKeys().hasAny(['rank', 'explanationCount', 'lastExplanation', 'updatedAt', 'tags', 'categoryId']);
+        
+      // --- Explanations (Subcollection) ---
+      match /explanations/{explanationId} {
+        allow read: if true;
+        allow create: if isSignedIn() 
+          && incoming().conceptId == conceptId
+          && incoming().userId == request.auth.uid;
+        allow update: if isSignedIn()
+          && (incoming().userId == existing().userId || incoming().diff(existing()).affectedKeys().hasOnly(['votes']));
+      }
     }
 
-    match /index_cards/{cardId} {
+    // --- User Vault ---
+    match /users/{userId}/vault/{itemId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) 
+        && incoming().userId == userId;
+      allow update: if isOwner(userId)
+        && incoming().userId == userId;
+      allow delete: if isOwner(userId);
+    }
+
+    // --- Feedback ---
+    match /feedback/{feedbackId} {
+      allow create: if true; // Allow anonymous or logged in feedback
+      allow read, update, delete: if false; // Admin only (service account)
+    }
+
+    // --- Global Logs ---
+    match /global_logs/{logId} {
       allow read: if true;
-      allow write: if false;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
     }
   }
 }

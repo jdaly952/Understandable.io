@@ -57,7 +57,8 @@ import {
   onSnapshot,
   increment,
   arrayUnion,
-  limit
+  limit,
+  getDocs
 } from "firebase/firestore";
 import { Shield, Save, CheckCircle2, AlertCircle, AlertTriangle, LogIn, ChevronLeft, Trash2, Download, ArrowRight, RotateCcw, Mail, Volume2, VolumeX, Loader2, Sparkles, Rocket, Heart, Smile, Lightbulb, Cloud, Telescope, Ghost, CircleDashed, Search, LayoutDashboard, Globe, HelpCircle, LogOut, BookOpen, Settings, Plus, Share2, Zap, Dice5, MessageSquare } from "lucide-react";
 import { GoogleGenAI, Modality } from "@google/genai";
@@ -916,6 +917,62 @@ function UnderstandableEngine() {
     }
   };
 
+  const seedCategories = async () => {
+    try {
+      const catsRef = collection(db, "categories");
+      const snap = await getDocs(catsRef);
+      if (snap.empty) {
+        console.log("Seeding categories...");
+        const cats = [
+          { id: 'dev-mastery', name: 'Software Mastery', description: 'Deep dives into engineering concepts.', icon: 'Code2', order: 1 },
+          { id: 'math-physics', name: 'Mathematics & Physics', description: 'The laws governing reality.', icon: 'Cpu', order: 2 },
+          { id: 'sys-design', name: 'System Architecture', description: 'The blueprint of robust pipelines.', icon: 'Layers', order: 3 },
+          { id: 'cognitive-sci', name: 'Cognitive Science', description: 'Understanding the human mind.', icon: 'Lightbulb', order: 4 },
+          { id: 'art-history', name: 'Art & History', description: 'The evolution of human expression.', icon: 'Code2', order: 5 }
+        ];
+        for (const cat of cats) {
+          await setDoc(doc(db, "categories", cat.id), cat);
+        }
+      }
+    } catch (err) {
+      console.warn("Category seeding failed", err);
+    }
+  };
+
+  const migrateSavedTopics = async () => {
+    if (!user) return;
+    try {
+      const oldTopicsRef = collection(db, "saved_topics");
+      const q = query(oldTopicsRef, where("uid", "==", user.uid));
+      const snap = await getDocs(q);
+      
+      if (!snap.empty) {
+        console.log("Migrating saved topics...");
+        const promises = snap.docs.map(oldDoc => {
+          const oldData = oldDoc.data();
+          const slug = oldData.concept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+          const vaultRef = doc(db, "users", user.uid, "vault", slug);
+          return setDoc(vaultRef, {
+            id: slug,
+            userId: user.uid,
+            conceptId: slug,
+            explanationId: "migrated",
+            conceptTitle: oldData.concept,
+            savedAt: oldData.createdAt || serverTimestamp()
+          });
+        });
+        await Promise.all(promises);
+        console.log("Migration complete.");
+      }
+    } catch (err) {
+      console.warn("Migration failed", err);
+    }
+  };
+
+  useEffect(() => {
+    seedCategories();
+  }, [db]);
+
   const lockInTruth = async () => {
     if (!result || !user) return;
     setSaving(true);
@@ -925,45 +982,42 @@ function UnderstandableEngine() {
         window.navigator.vibrate(50);
       }
 
-      // Final step is 5 (Identity Anchor)
-      await recordStepProgress(5);
+      const slug = concept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+      const conceptRef = doc(db, "concepts", slug);
+      const explanationId = generateUUID();
+      const expRef = doc(db, "concepts", slug, "explanations", explanationId);
+      const vaultRef = doc(db, "users", user.uid, "vault", slug);
 
-      // Global Indexing & Discovery Detection - SELF-REGULATING VAULT LOGIC
-      const conceptId = concept.toLowerCase().trim().replace(/\s+/g, '_');
-      const indexRef = doc(db, "global_index", conceptId);
-      const indexSnap = await getDoc(indexRef);
-      
-      const tags = Array.isArray(result.tags) ? result.tags : [];
-      const relationships = Array.isArray(result.relatedConcepts) ? result.relatedConcepts : [];
+      const promises: any[] = [
+        setDoc(conceptRef, {
+          rank: increment(5),
+          updatedAt: serverTimestamp()
+        }, { merge: true }),
+        setDoc(expRef, {
+          id: explanationId,
+          conceptId: slug,
+          userId: user.uid,
+          payload: result,
+          learningStyle,
+          votes: { ups: 0, downs: 0 },
+          createdAt: serverTimestamp()
+        }),
+        setDoc(vaultRef, {
+          id: slug,
+          userId: user.uid,
+          conceptId: slug,
+          explanationId: explanationId,
+          conceptTitle: concept,
+          savedAt: serverTimestamp()
+        }),
+        setDoc(doc(db, "users", user.uid), {
+          lastActive: serverTimestamp()
+        }, { merge: true }),
+      ];
 
-      const conceptPayload: any = {
-        id: conceptId,
-        rank: increment(1),
-        affirmationCount: increment(1),
-        updatedAt: serverTimestamp(),
-        lastPayload: result,
-      };
+      await Promise.all(promises);
 
-      // Add tags and relationships if they exist
-      if (tags.length > 0) conceptPayload.tags = arrayUnion(...tags);
-      if (relationships.length > 0) conceptPayload.relationships = arrayUnion(...relationships);
-
-      if (!indexSnap.exists()) {
-        // Core Behavior: Preserve exact literal title on creation
-        conceptPayload.concept = concept; 
-        conceptPayload.createdAt = serverTimestamp();
-        conceptPayload.domain = result.domain || "General";
-        conceptPayload.domainEmoji = result.domainEmoji || "🧠";
-        
-        await setDoc(indexRef, conceptPayload);
-        setAffirmationStatus("new_discovery");
-      } else {
-        // Vault Logic: Consolidation & Merging while preserving original title
-        // We do NOT include 'concept' here to ensure the original title is preserved exactly
-        await setDoc(indexRef, conceptPayload, { merge: true });
-        setAffirmationStatus("linked");
-      }
-
+      setAffirmationStatus("linked");
       setSaveSuccess(true);
       setShowSparkle(true);
 
@@ -1140,8 +1194,8 @@ function UnderstandableEngine() {
   }, [globalLogs, vaultSuggestions, savedUnderstandables]);
 
   const renderConceptCard = (ax: any, i: number, group: string, layout: "card" | "row" = "card") => {
-    // Rely on id, concept, and index for uniqueness
-    const id = ax.id || ax.concept || `no-id-${group}-${i}`;
+    // Rely on id or concept for uniqueness.
+    const id = ax.id || ax.concept || ax.payload?.id || ax.payload?.title || "no-id";
     const uniqueKey = `axon-${group}-${layout}-${id}-${i}`;
     const tags = ax.tags || ax.payload?.tags || [];
     const relationships = ax.relationships || ax.payload?.relatedConcepts || [];
@@ -1360,80 +1414,62 @@ function UnderstandableEngine() {
         unsubscribeGlobal = undefined;
       }
 
-      // Setup listener for global master topics (Public Vault)
+      // Setup listener for global concepts
       const qGlobal = query(
-        collection(db, "global_index"),
+        collection(db, "concepts"),
         orderBy("rank", "desc"),
         limit(50)
       );
       unsubscribeGlobal = onSnapshot(qGlobal, (snapshot) => {
         const docs = snapshot.docs.map(doc => {
           const data = doc.data();
-          // Normalize structure for the index view
           return {
             id: doc.id,
-            concept: data.concept,
-            domain: data.lastPayload?.domain || "General",
-            payload: data.lastPayload,
+            concept: data.title,
+            payload: data.lastExplanation,
             ...data
           };
         });
         
-        // Ensure unique logs by ID
-        const uniqueDocs = docs.filter((doc, index, self) =>
-          index === self.findIndex((t) => t.id === doc.id)
-        );
-        
-        setGlobalLogs(uniqueDocs);
+        setGlobalLogs(docs);
       }, (err) => {
-        console.warn("Global vault currently awaiting server sync.");
+        console.warn("Global concept vault currently awaiting server sync.");
       });
 
-      // Vault Listener
+      // Trending Explanations Listener
       const qVault = query(
-        collection(db, "axiom_vault"),
-        orderBy("affirmationCount", "desc"),
+        collection(db, "global_logs"),
+        orderBy("createdAt", "desc"),
         limit(20)
       );
       const unsubscribeVault = onSnapshot(qVault, (snap) => {
         const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const uniqueDocs = docs.filter((doc, index, self) =>
-          index === self.findIndex((t) => t.id === doc.id)
-        );
-        setVaultSuggestions(uniqueDocs);
+        setVaultSuggestions(docs);
       });
 
       if (u) {
         // Sync user to Firestore
         const userRef = doc(db, "users", u.uid);
-        getDoc(userRef).then((docSnap) => {
-          if (!docSnap.exists()) {
-            setDoc(userRef, {
-              uid: u.uid,
-              email: u.email,
-              displayName: u.displayName,
-              photoURL: u.photoURL,
-              createdAt: serverTimestamp()
-            }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${u.uid}`));
-          }
-        }).catch(err => handleFirestoreError(err, OperationType.GET, `users/${u.uid}`));
+        setDoc(userRef, {
+          uid: u.uid,
+          email: u.email,
+          displayName: u.displayName,
+          photoURL: u.photoURL,
+          lastActive: serverTimestamp()
+        }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${u.uid}`));
 
-        // Setup real-time listener for user's topics (Private)
+        // Setup real-time listener for user's personal vault
         setLoadingIndex(true);
         const q = query(
-          collection(db, "saved_topics"),
-          where("uid", "==", u.uid),
-          orderBy("createdAt", "desc")
+          collection(db, "users", u.uid, "vault"),
+          orderBy("savedAt", "desc")
         );
         unsubscribeIndex = onSnapshot(q, (snapshot) => {
-          const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          const uniqueDocs = docs.filter((doc, index, self) =>
-            index === self.findIndex((t) => t.id === doc.id)
-          );
-          setSavedUnderstandables(uniqueDocs);
+          const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), concept: doc.data().conceptTitle }));
+          setSavedUnderstandables(docs);
           setLoadingIndex(false);
         }, (err) => {
-          handleFirestoreError(err, OperationType.LIST, "saved_topics");
+          handleFirestoreError(err, OperationType.LIST, "user_vault");
           setLoadingIndex(false);
         });
       } else {
@@ -1486,56 +1522,48 @@ function UnderstandableEngine() {
     setSaving(true);
     try {
       const slug = concept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-      const globalRef = doc(db, "global_index", slug);
-      const globalSnap = await getDoc(globalRef);
-      const userPrefsRef = doc(db, "users", user.uid);
-      
-      const tags = Array.isArray(result.tags) ? result.tags : [];
-      const relationships = Array.isArray(result.relatedConcepts) ? result.relatedConcepts : [];
-
-      const globalPayload: any = {
-        id: slug,
-        rank: increment(10),
-        lastPayload: result,
-        updatedAt: serverTimestamp()
-      };
-
-      if (tags.length > 0) globalPayload.tags = arrayUnion(...tags);
-      if (relationships.length > 0) globalPayload.relationships = arrayUnion(...relationships);
+      const conceptRef = doc(db, "concepts", slug);
+      const explanationId = generateUUID();
+      const expRef = doc(db, "concepts", slug, "explanations", explanationId);
+      const vaultRef = doc(db, "users", user.uid, "vault", slug);
 
       const promises: any[] = [
-        addDoc(collection(db, "saved_topics"), {
-          uid: user.uid,
-          concept: concept,
+        setDoc(conceptRef, {
+          id: slug,
+          title: concept,
+          normalizedTitle: concept.toLowerCase(),
+          rank: increment(10),
+          lastExplanation: result,
+          updatedAt: serverTimestamp()
+        }, { merge: true }),
+        setDoc(expRef, {
+          id: explanationId,
+          conceptId: slug,
+          userId: user.uid,
           payload: result,
-          domain: result.domain || "general",
-          domainEmoji: result.domainEmoji || "🧠",
-          isManuallySaved: true,
           learningStyle,
+          votes: { ups: 0, downs: 0 },
           createdAt: serverTimestamp()
         }),
-        setDoc(userPrefsRef, {
+        setDoc(vaultRef, {
+          id: slug,
+          userId: user.uid,
+          conceptId: slug,
+          explanationId: explanationId,
+          conceptTitle: concept,
+          savedAt: serverTimestamp()
+        }),
+        setDoc(doc(db, "users", user.uid), {
           preferredLearningStyle: learningStyle,
-          lastActivity: serverTimestamp()
+          lastActive: serverTimestamp()
         }, { merge: true }),
       ];
-
-      if (!globalSnap.exists()) {
-        globalPayload.concept = concept;
-        globalPayload.createdAt = serverTimestamp();
-        globalPayload.domain = result.domain || "General";
-        globalPayload.domainEmoji = result.domainEmoji || "🧠";
-        promises.push(setDoc(globalRef, globalPayload));
-      } else {
-        promises.push(setDoc(globalRef, globalPayload, { merge: true }));
-      }
       
       await Promise.all(promises);
-      
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, "saved_topics");
+      handleFirestoreError(err, OperationType.CREATE, "save_to_library");
     } finally {
       setSaving(false);
     }
@@ -1608,21 +1636,25 @@ function UnderstandableEngine() {
         }, 500);
 
         const slug = activeTopic.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-        const globalRef = doc(db, "global_index", slug);
+        const conceptRef = doc(db, "concepts", slug);
+        const explanationId = generateUUID();
 
         // --- AUTOMATIC PERSISTENCE FOR LEARNING & RANKING ---
         Promise.all([
-          addDoc(collection(db, "synthesis_logs"), {
-            concept: activeTopic,
+          addDoc(collection(db, "global_logs"), {
+            id: explanationId,
+            conceptId: slug,
+            conceptTitle: activeTopic,
             payload: data,
-            uid: user?.uid || null,
-            isManuallySaved: false,
+            userId: user?.uid || null,
             createdAt: serverTimestamp()
           }),
-          setDoc(globalRef, {
-            concept: activeTopic,
+          setDoc(conceptRef, {
+            id: slug,
+            title: activeTopic,
+            normalizedTitle: activeTopic.toLowerCase(),
             rank: increment(1),
-            lastPayload: data,
+            lastExplanation: data,
             updatedAt: serverTimestamp()
           }, { merge: true })
         ]).catch(err => {
@@ -2119,25 +2151,7 @@ function UnderstandableEngine() {
                               </button>
                               <button 
                                 onClick={async () => {
-                                  if(window.confirm("Permanently delete your account AND all saved data? This is irreversible and compliant with data privacy regulations.")) {
-                                    try {
-                                      // 1. Delete user's saved topics in Firestore
-                                      const q = query(collection(db, "saved_topics"), where("uid", "==", user?.uid));
-                                      const snapshot = await getDoc(collection(db, "saved_topics") as any); // Simplification: we'd ideally use a batch delete but for now we trust the user sign-out
-                                      
-                                      // Actually, best practice for "Delete Account" in a prototype is a clear message + sign out
-                                      // but for App Store we should at least attempt to clear the main user doc if it exists.
-                                      if (user) {
-                                        await setDoc(doc(db, "users", user.uid), { deletedAt: serverTimestamp() }, { merge: true });
-                                      }
-                                      
-                                      await signOut(auth);
-                                      alert("Account deletion request processed. Your data has been scheduled for removal.");
-                                    } catch (err) {
-                                      console.error("Deletion failed:", err);
-                                      alert("Induction reversal (deletion) failed. Please try again later.");
-                                    }
-                                  }
+                                  alert("Account deletion is temporarily disabled. Please contact support.");
                                 }}
                                 className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.2em] font-black text-ink/30 hover:text-red-500 transition-colors"
                               >
