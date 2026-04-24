@@ -905,7 +905,8 @@ function UnderstandableEngine() {
         affirmationCount: increment(1),
         lastAffirmed: serverTimestamp(),
         domain: result.domain,
-        domainEmoji: result.domainEmoji
+        domainEmoji: result.domainEmoji,
+        whyItMatters: result.whyItMatters || ""
       }, { merge: true });
 
     } catch (err) {
@@ -1206,10 +1207,10 @@ function UnderstandableEngine() {
           </div>
         )}
 
-        {ax.payload?.whyItMatters && (
+        {(ax.whyItMatters || ax.payload?.whyItMatters) && (
           <div className="mb-8 p-6 bg-accent/[0.03] border-l-4 border-accent rounded-r-2xl">
             <p className="font-mono text-[9px] uppercase tracking-[0.3em] font-black opacity-30 mb-2 whitespace-nowrap">Impact Analysis</p>
-            <p className="text-xs md:text-sm font-sans leading-relaxed opacity-70 italic line-clamp-2">{ax.payload.whyItMatters}</p>
+            <p className="text-xs md:text-sm font-sans leading-relaxed opacity-70 italic line-clamp-2">{ax.whyItMatters || ax.payload.whyItMatters}</p>
           </div>
         )}
 
@@ -1788,9 +1789,11 @@ function UnderstandableEngine() {
     );
   }
 
+  const isSlideMode = !!result && !showIndex && !showLibrary && !showDiscovery;
+
   return (
-    <div className={`min-h-screen transition-colors duration-700 relative flex flex-col overflow-x-hidden overflow-y-auto bg-grid bg-bg text-ink`}>
-      <div className="w-full min-h-screen flex flex-col relative bg-inherit">
+    <div className={`min-h-screen transition-colors duration-700 relative flex flex-col ${isSlideMode ? 'h-screen overflow-hidden' : 'overflow-x-hidden overflow-y-auto'} bg-grid bg-bg text-ink`}>
+      <div className={`w-full ${isSlideMode ? 'h-full' : 'min-h-screen'} flex flex-col relative bg-inherit`}>
         {/* Onboarding Overlay */}
         <AnimatePresence>
           {showOnboarding && (
@@ -2278,35 +2281,45 @@ function UnderstandableEngine() {
                 animate="animate"
                 exit="exit"
                 ref={resultRef} 
-                className="w-full flex-1 flex flex-col p-6 md:p-12 lg:px-24 lg:py-24 transition-all duration-1000 bg-bg min-h-[calc(100vh-80px)] overflow-y-auto"
+                className="w-full flex-1 flex flex-col p-4 md:p-12 lg:px-24 lg:py-24 transition-all duration-1000 bg-bg h-[calc(100vh-80px)] md:h-auto overflow-hidden md:overflow-y-auto"
               >
-                <div className="flex-1 flex flex-col justify-center py-10">
+                <div className="flex-1 flex flex-col h-full">
                   <motion.div
                     key="result"
                     initial={{ opacity: 0, y: 60 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -60 }}
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    className="w-full max-w-6xl mx-auto flex flex-col min-h-[70vh]"
+                    className="w-full max-w-6xl mx-auto flex flex-col h-full"
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={(_, info) => {
+                      if (info.offset.x > 100 && axiomStep > 0) {
+                        setViewStep(axiomStep - 1);
+                      } else if (info.offset.x < -100 && axiomStep < 5) {
+                        setViewStep(axiomStep + 1);
+                      }
+                    }}
                   >
-                <div className="mb-8 flex justify-between items-center">
+                <div className="shrink-0 mb-6 md:mb-8 flex justify-between items-center">
                   <button 
-                    onClick={() => { setConcept(""); setResult(null); }}
+                    onClick={() => { setConcept(""); setResult(null); setAxiomStep(0); }}
                     className="font-mono text-[10px] uppercase tracking-widest font-black text-ink/40 hover:text-accent transition-all flex items-center gap-2"
                   >
-                    ← Abandon Discovery
+                    ← <span className="hidden md:inline">Abandon Discovery</span><span className="md:hidden">Back</span>
                   </button>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5 md:gap-2">
                     {[0, 1, 2, 3, 4, 5].map(step => (
                       <div 
                         key={step} 
-                        className={`h-1 w-6 md:w-12 transition-all duration-500 rounded-full ${step <= axiomStep ? "bg-accent" : "bg-ink/10"}`} 
+                        className={`h-1 w-4 md:w-12 transition-all duration-500 rounded-full ${step <= axiomStep ? "bg-accent" : "bg-ink/10"}`} 
                       />
                     ))}
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col justify-center relative overflow-hidden">
+                <div className="flex-1 relative overflow-hidden">
                   <AnimatePresence mode="popLayout" custom={direction} initial={false}>
                     {isRefining && (
                       <motion.div 
@@ -2315,8 +2328,8 @@ function UnderstandableEngine() {
                         exit={{ opacity: 0 }}
                         className="absolute inset-0 z-[60] bg-bg/80 backdrop-blur-sm flex flex-col items-center justify-center gap-6"
                       >
-                         <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-                         <span className="font-mono text-sm uppercase tracking-[0.4em] font-black animate-pulse">Recalibrating Layer...</span>
+                         <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+                         <span className="font-mono text-[10px] md:text-sm uppercase tracking-[0.4em] font-black animate-pulse text-center">Refining...</span>
                       </motion.div>
                     )}
                     {axiomStep === 0 && (
@@ -2327,7 +2340,7 @@ function UnderstandableEngine() {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="space-y-12 w-full"
+                        className="space-y-6 md:space-y-12 w-full h-full flex flex-col justify-center overflow-y-auto no-scrollbar py-4"
                       >
                          <SectionLabel>The Anchor</SectionLabel>
                          <h2 className="text-4xl md:text-8xl font-display font-black uppercase tracking-tight leading-none text-ink">{concept}</h2>
@@ -2347,36 +2360,16 @@ function UnderstandableEngine() {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="space-y-12 w-full"
+                        className="space-y-6 md:space-y-12 w-full h-full flex flex-col justify-center overflow-y-auto no-scrollbar py-4"
                       >
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6">
                           <StateStamp label={result.axis1?.labelA || "The Abundance"} type="success" />
                           <UnderstandableVoice text={result.axis1?.stateA || result.stateA} />
                         </div>
-                        <p className="text-3xl md:text-6xl font-sans leading-[1.3] text-pretty font-bold transition-all text-ink">
+                        <p className="text-2xl md:text-6xl font-sans leading-tight md:leading-[1.3] text-pretty font-bold transition-all text-ink">
                           {result.axis1?.stateA || result.stateA}
                         </p>
                         <ELI9Card content={result.axis1?.stateA_eli9} />
-
-                        {result.furtherExamples && result.furtherExamples.length > 0 && (
-                          <div className="mt-8 pt-8 border-t-2 border-dashed border-border flex items-center gap-6">
-                            <button 
-                              onClick={() => setAnotherExampleIndex(prev => (prev + 1) % result.furtherExamples.length)}
-                              className="font-mono text-[10px] uppercase tracking-widest font-black text-accent hover:opacity-70 flex items-center gap-2"
-                            >
-                              <Sparkles size={14} />
-                              Show Another Example
-                            </button>
-                            <motion.p 
-                              key={`ex1-${anotherExampleIndex}`}
-                              initial={{ opacity: 0, x: 10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              className="font-serif italic text-sm md:text-base opacity-60"
-                            >
-                              "{result.furtherExamples[anotherExampleIndex]}"
-                            </motion.p>
-                          </div>
-                        )}
                       </motion.div>
                     )}
 
@@ -2388,36 +2381,16 @@ function UnderstandableEngine() {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="space-y-12 w-full"
+                        className="space-y-6 md:space-y-12 w-full h-full flex flex-col justify-center overflow-y-auto no-scrollbar py-4"
                       >
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6">
                           <StateStamp label={result.axis1?.labelB || "The Scarcity"} type="struggle" />
                           <UnderstandableVoice text={result.axis1?.stateB || result.stateB} />
                         </div>
-                        <p className="text-3xl md:text-6xl font-sans leading-[1.3] text-pretty font-bold transition-all text-ink">
+                        <p className="text-2xl md:text-6xl font-sans leading-tight md:leading-[1.3] text-pretty font-bold transition-all text-ink">
                           {result.axis1?.stateB || result.stateB}
                         </p>
                         <ELI9Card content={result.axis1?.stateB_eli9} />
-
-                        {result.furtherExamples && result.furtherExamples.length > 0 && (
-                          <div className="mt-8 pt-8 border-t-2 border-dashed border-border flex items-center gap-6">
-                            <button 
-                              onClick={() => setAnotherExampleIndex(prev => (prev + 1) % result.furtherExamples.length)}
-                              className="font-mono text-[10px] uppercase tracking-widest font-black text-accent hover:opacity-70 flex items-center gap-2"
-                            >
-                              <Sparkles size={14} />
-                              Show Another Context
-                            </button>
-                            <motion.p 
-                              key={`ex2-${anotherExampleIndex}`}
-                              initial={{ opacity: 0, x: 10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              className="font-serif italic text-sm md:text-base opacity-60"
-                            >
-                              "{result.furtherExamples[(anotherExampleIndex + 1) % result.furtherExamples.length]}"
-                            </motion.p>
-                          </div>
-                        )}
                       </motion.div>
                     )}
 
@@ -2429,13 +2402,13 @@ function UnderstandableEngine() {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="p-8 md:p-12 lg:p-20 border-4 border-accent/20 bg-accent/5 rounded-[3rem] space-y-12 w-full"
+                        className="p-6 md:p-12 lg:p-20 border-2 md:border-4 border-accent/20 bg-accent/5 rounded-[2rem] md:rounded-[3rem] space-y-6 md:space-y-12 w-full h-full flex flex-col justify-center overflow-y-auto no-scrollbar py-4"
                       >
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6">
                           <SectionLabel>The Hidden Mechanism</SectionLabel>
                           <UnderstandableVoice text={result.axis2?.mechanism} />
                         </div>
-                        <p className="text-3xl md:text-6xl font-display font-bold leading-[1.1] tracking-tight text-ink">
+                        <p className="text-2xl md:text-6xl font-display font-bold leading-tight tracking-tight text-ink">
                           {result.axis2?.mechanism}
                         </p>
                         <ELI9Card content={result.axis2?.mechanism_eli9} />
@@ -2450,24 +2423,15 @@ function UnderstandableEngine() {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="space-y-12 w-full"
+                        className="space-y-6 md:space-y-12 w-full h-full flex flex-col justify-center overflow-y-auto no-scrollbar py-4"
                       >
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6">
                           <SectionLabel>The Zenith</SectionLabel>
                           <UnderstandableVoice text={result.axis3?.zenith || result.zenith} />
                         </div>
-                        <p className="text-4xl md:text-8xl font-display font-black text-ink tracking-tighter leading-[1.1]">
+                        <p className="text-3xl md:text-8xl font-display font-black text-ink tracking-tighter leading-tight">
                           "{result.axis3?.zenith || result.zenith}"
                         </p>
-                        
-                        {result.whyItMatters && (
-                          <div className="bg-accent text-bg p-8 md:p-12 rounded-3xl shadow-[16px_16px_0_0_rgba(74,103,65,0.1)]">
-                             <p className="font-mono text-[10px] uppercase tracking-[0.4em] font-black opacity-60 mb-4 italic">The Meaning</p>
-                             <p className="text-2xl md:text-4xl font-serif italic leading-relaxed">
-                               {result.whyItMatters}
-                             </p>
-                          </div>
-                        )}
                         <ELI9Card content={result.axis3?.zenith_eli9} />
                       </motion.div>
                     )}
@@ -2480,35 +2444,33 @@ function UnderstandableEngine() {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="text-center space-y-12 py-10 md:py-20 w-full"
+                        className="text-center space-y-8 md:space-y-12 py-6 md:py-20 w-full h-full flex flex-col justify-center overflow-y-auto no-scrollbar"
                       >
-                        <div className="h-2 w-24 bg-accent mx-auto rounded-full" />
-                        <h3 className="text-4xl md:text-7xl font-display font-black uppercase text-ink tracking-tighter">Clarity Gained?</h3>
-                        <p className="text-xl md:text-4xl font-serif italic text-ink/60 max-w-2xl mx-auto leading-tight">
-                          Does this concept now sit beautifully in your mind, or should we shift its perspective?
+                        <div className="h-1.5 w-16 md:w-24 bg-accent mx-auto rounded-full" />
+                        <h3 className="text-3xl md:text-7xl font-display font-black uppercase text-ink tracking-tighter">Clarity Gained?</h3>
+                        <p className="text-lg md:text-4xl font-serif italic text-ink/60 max-w-2xl mx-auto leading-tight">
+                          Does this concept now sit beautifully in your mind?
                         </p>
                         
-                        <div className="flex flex-col md:flex-row gap-6 justify-center mt-12">
+                        <div className="flex flex-col md:flex-row gap-4 md:gap-6 justify-center mt-6 md:mt-12">
                            <button 
                              onClick={cyclePerspective}
-                             className="px-8 py-6 md:px-12 md:py-8 rounded-3xl border-4 border-accent text-accent font-mono text-lg uppercase tracking-widest font-black hover:bg-accent hover:text-bg transition-all flex items-center justify-center gap-4 group"
+                             className="px-6 py-4 md:px-12 md:py-8 rounded-2xl md:rounded-3xl border-2 md:border-4 border-accent text-accent font-mono text-sm md:text-lg uppercase tracking-widest font-black hover:bg-accent hover:text-bg transition-all flex items-center justify-center gap-3 md:gap-4 group"
                            >
-                              <RotateCcw className={`w-6 h-6 transition-transform group-hover:rotate-[-180deg] ${isRefining ? "animate-spin" : ""}`} />
+                              <RotateCcw className={`w-5 h-5 md:w-6 md:h-6 transition-transform group-hover:rotate-[-180deg] ${isRefining ? "animate-spin" : ""}`} />
                               Shift Lens
                            </button>
                            <button 
                              onClick={lockInTruth}
                              disabled={saving || saveSuccess}
-                             className="px-8 py-6 md:px-12 md:py-10 bg-accent border-4 border-accent text-bg rounded-4xl flex items-center justify-between gap-12 group hover:bg-bg hover:text-accent transition-all active:scale-95 shadow-[10px_10px_0_0_rgba(74,103,65,0.1)] md:shadow-[20px_20px_0_0_rgba(74,103,65,0.1)]"
+                             className="px-6 py-4 md:px-12 md:py-10 bg-accent border-2 md:border-4 border-accent text-bg rounded-2xl md:rounded-4xl flex items-center justify-between gap-6 md:gap-12 group hover:bg-bg hover:text-accent transition-all active:scale-95"
                            >
-                             <AhaSparkle active={showSparkle} status={affirmationStatus} concept={concept} />
-                             <div className="flex flex-col items-start text-left">
-                               <span className="font-mono text-[10px] uppercase tracking-[0.4em] font-black opacity-40 italic">Final Step</span>
-                               <span className="font-display text-xl md:text-3xl lg:text-4xl font-black uppercase">Understand it!</span>
-                             </div>
-                             <div className="w-12 h-12 md:w-16 md:h-16 bg-bg flex items-center justify-center rounded-full text-accent group-hover:bg-accent group-hover:text-bg transition-all">
-                               <ArrowRight className="w-6 h-6 md:w-10 md:h-10" strokeWidth={3} />
-                             </div>
+                              <AhaSparkle active={showSparkle} status={affirmationStatus} concept={concept} />
+                              <div className="flex flex-col items-start text-left">
+                                <span className="font-mono text-[8px] md:text-[10px] uppercase tracking-[0.4em] font-black opacity-40 italic">Final Step</span>
+                                <span className="font-display text-lg md:text-4xl font-black uppercase">Understand!</span>
+                              </div>
+                              <ArrowRight className="w-6 h-6 md:w-10 md:h-10 border-2 rounded-full p-0.5 md:p-1" strokeWidth={3} />
                            </button>
                         </div>
                       </motion.div>
@@ -2572,14 +2534,14 @@ function UnderstandableEngine() {
 
                 {/* AXIOM CONTROLS */}
                 {axiomStep < 5 && (
-                  <div className="mt-20 flex gap-4 h-24 md:h-32">
+                  <div className="shrink-0 mt-6 md:mt-12 flex gap-3 md:gap-4 h-16 md:h-32 mb-4">
                     {axiomStep > 0 && (
                       <button 
                         onClick={() => setViewStep(axiomStep - 1)}
-                        className="flex-[1] bg-ink/5 border-4 border-ink/20 text-ink rounded-3xl flex flex-col items-center justify-center hover:bg-ink hover:text-white transition-all group lg:min-w-[120px]"
+                        className="flex-1 bg-ink/5 border-2 md:border-4 border-ink/20 text-ink rounded-xl md:rounded-3xl flex flex-col items-center justify-center hover:bg-ink hover:text-white transition-all group"
                       >
-                        <ChevronLeft className={`w-6 h-6 mb-2 group-hover:-translate-x-1 transition-transform`} />
-                        <span className="font-mono text-[10px] md:text-xs uppercase tracking-widest font-black">Back</span>
+                        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform" />
+                        <span className="font-mono text-[8px] md:text-[10px] uppercase tracking-widest font-black">Back</span>
                       </button>
                     )}
                     <button 
@@ -2588,13 +2550,13 @@ function UnderstandableEngine() {
                         await recordStepProgress(axiomStep);
                         setViewStep(axiomStep + 1);
                       }}
-                      className="flex-[3] bg-accent border-4 border-accent text-bg rounded-3xl flex items-center justify-between px-8 md:px-16 hover:bg-bg hover:text-accent transition-all group active:scale-95 relative overflow-hidden"
+                      className="flex-[3] bg-accent border-2 md:border-4 border-accent text-bg rounded-xl md:rounded-3xl flex items-center justify-between px-6 md:px-16 hover:bg-bg hover:text-accent transition-all group active:scale-95 relative overflow-hidden"
                     >
                       <div className="flex flex-col items-start">
-                        <span className="font-mono text-[10px] md:text-xs uppercase tracking-widest font-black opacity-60">I Understand</span>
-                        <span className="font-display text-xl md:text-3xl font-black uppercase">Proceed</span>
+                        <span className="font-mono text-[8px] md:text-[10px] uppercase tracking-widest font-black opacity-60">I Understand</span>
+                        <span className="font-display text-lg md:text-3xl font-black uppercase">Proceed</span>
                       </div>
-                      <ArrowRight className="w-8 h-8 md:w-12 md:h-12 group-hover:translate-x-4 transition-transform" strokeWidth={4} />
+                      <ArrowRight className="w-6 h-6 md:w-12 md:h-12 group-hover:translate-x-2 md:translate-x-4 transition-transform" strokeWidth={4} />
                     </button>
                   </div>
                 )}

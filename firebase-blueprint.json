@@ -71,7 +71,8 @@
         "affirmationCount": { "type": "number" },
         "lastAffirmed": { "type": "string", "format": "date-time" },
         "domain": { "type": "string" },
-        "domainEmoji": { "type": "string" }
+        "domainEmoji": { "type": "string" },
+        "whyItMatters": { "type": "string" }
       },
       "required": ["concept", "step", "content", "affirmationCount"]
     },
@@ -88,6 +89,7 @@
         "learningStyle": { "type": "string" },
         "domain": { "type": "string" },
         "domainEmoji": { "type": "string" },
+        "whyItMatters": { "type": "string" },
         "breadcrumb": { "type": "string" },
         "isAffirmed": { "type": "boolean" },
         "timestamp": { "type": "string", "format": "date-time" }
