@@ -99,5 +99,15 @@ service cloud.firestore {
     match /concepts/{conceptId} {
         allow read: if true;
     }
+
+    match /global_index/{slug} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+    
+    match /community_votes/{contentHash} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

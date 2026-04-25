@@ -460,15 +460,15 @@ const UnderstandableVoice = ({ text }: { text: string }) => {
     <button 
       onClick={synthesizeSpeech}
       disabled={loading}
-      className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-current/10 hover:border-accent/40 hover:bg-accent/5 transition-all group shrink-0"
+      className="flex items-center gap-3 px-5 py-2.5 rounded-full border border-current/20 hover:border-accent/60 hover:bg-accent/5 transition-all group shrink-0 shadow-sm"
       title="Voice Synthesis"
     >
       {loading ? (
-        <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin text-accent" />
+        <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin text-accent" />
       ) : isPlaying ? (
-        <VolumeX className="w-3.5 h-3.5 md:w-4 md:h-4 text-accent" />
+        <VolumeX className="w-5 h-5 md:w-6 md:h-6 text-accent" />
       ) : (
-        <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4 opacity-40 group-hover:opacity-100" />
+        <Volume2 className="w-5 h-5 md:w-6 md:h-6 opacity-60 group-hover:opacity-100" />
       )}
       <span className="font-serif italic text-[11px] md:text-xs font-bold opacity-90 group-hover:opacity-100 hidden sm:block">
         {loading ? "Synthesizing..." : isPlaying ? "Silence" : "Read Aloud"}
@@ -483,22 +483,22 @@ const ELI9Card = ({ content }: { content?: string }) => {
   if (!content) return null;
 
   return (
-    <div className="mt-8 mb-4">
+    <div className="mt-4 mb-2">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-4 p-2 pr-6 rounded-full border-2 transition-all hover:-translate-y-0.5 active:translate-y-0
+        className={`flex items-center gap-3 p-1.5 pr-4 rounded-full border transition-all hover:scale-[1.02] active:scale-[0.98]
           ${isOpen 
-            ? 'bg-accent/5 border-accent/20 text-accent' 
-            : 'bg-surface border-border text-ink opacity-60 hover:opacity-100'}
-          shadow-[4px_4px_0_0_rgba(0,0,0,0.02)]
+            ? 'bg-accent/10 border-accent/30 text-accent' 
+            : 'bg-surface border-border text-ink/70 hover:text-ink'}
+          shadow-sm
         `}
       >
-        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center ${isOpen ? 'bg-accent/20' : 'bg-black/5'}`}>
-           <Heart className="w-3 h-3 md:w-4 md:h-4" />
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isOpen ? 'bg-accent/20' : 'bg-black/5'}`}>
+           <Heart className="w-3 h-3" />
         </div>
-        <div className="flex flex-col items-start leading-none gap-1">
-          <span className="font-serif italic text-xs md:text-sm font-bold">Simple Essence</span>
-          <span className="text-[10px] font-mono uppercase tracking-[0.2em] opacity-80">{isOpen ? 'Closing' : 'View Distillation'}</span>
+        <div className="flex flex-col items-start leading-none gap-0.5">
+          <span className="font-serif italic text-[11px] md:text-xs font-bold">The Heartland</span>
+          <span className="text-[9px] font-mono uppercase tracking-widest opacity-70">{isOpen ? 'Closing' : 'See Essence'}</span>
         </div>
       </button>
 
@@ -508,14 +508,14 @@ const ELI9Card = ({ content }: { content?: string }) => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="mt-6 overflow-hidden rounded-[2.5rem] border border-accent/20 bg-accent/[0.02]"
+            className="mt-4 overflow-hidden rounded-[1.5rem] border border-accent/20 bg-accent/[0.02]"
           >
-            <div className="p-8 md:p-12">
-                <div className="flex items-center justify-between mb-8">
-                  <SectionLabel className="!text-lg">Core Distillation</SectionLabel>
+            <div className="p-6 md:p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 font-bold">Core Truth</span>
                   <UnderstandableVoice text={content} />
                 </div>
-               <p className="text-xl md:text-4xl font-serif italic font-semibold leading-relaxed text-pretty text-accent">
+               <p className="text-lg md:text-2xl font-serif italic font-semibold leading-relaxed text-accent">
                  {content}
                </p>
             </div>
@@ -977,6 +977,22 @@ function UnderstandableEngine() {
     }
   };
 
+  const nextSlide = () => {
+    setCurrentSlide(prev => {
+      const next = Math.min(5, prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return next;
+    });
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide(prev => {
+      const next = Math.max(0, prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return next;
+    });
+  };
+
   const saveToLibrary = async () => {
     if (!user) {
       await handleLogin();
@@ -985,6 +1001,7 @@ function UnderstandableEngine() {
     if (!result || saving) return;
 
     setSaving(true);
+    console.log("Understandable: Locking in insight...");
     try {
       const slug = concept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
       const globalRef = doc(db, "global_index", slug);
@@ -996,6 +1013,7 @@ function UnderstandableEngine() {
           payload: result,
           isManuallySaved: true,
           category: category,
+          userDisplayName: user.displayName,
           createdAt: serverTimestamp()
         }),
         setDoc(globalRef, {
@@ -1006,8 +1024,10 @@ function UnderstandableEngine() {
         }, { merge: true })
       ]);
       
+      console.log("Understandable: Insight stored successfully.");
       setSaveSuccess(true);
     } catch (err) {
+      console.error("Understandable Save Error:", err);
       handleFirestoreError(err, OperationType.CREATE, "saved_topics");
     } finally {
       setSaving(false);
@@ -1523,7 +1543,7 @@ function UnderstandableEngine() {
                               onClick={() => { setShowAccount(false); setShowOnboarding(true); setOnboardingStep(0); }}
                               className="w-full text-left font-mono text-lg uppercase tracking-[0.4em] font-black hover:text-accent transition-all flex items-center justify-between group py-4"
                             >
-                              How Understandable Works
+                              App Guide
                               <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                             </button>
                             <button 
@@ -1698,8 +1718,8 @@ function UnderstandableEngine() {
         )}
 
         {/* RESULT COLUMN */}
-        <section ref={resultRef} className={`w-full ${!showIndex ? 'md:w-[68%]' : 'md:w-full'} flex flex-col p-6 md:p-12 lg:px-24 lg:py-24 transition-all duration-1000 bg-bg`}>
-          <div className="flex-1 flex flex-col justify-center py-10">
+        <section ref={resultRef} className={`w-full ${!showIndex ? 'md:w-[68%]' : 'md:w-full'} flex flex-col p-4 md:p-8 lg:px-12 transition-all duration-1000 bg-bg`}>
+          <div className="flex-1 flex flex-col justify-start py-4">
             <AnimatePresence mode="wait">
             {showCommunity ? (
               <motion.div
@@ -1841,30 +1861,20 @@ function UnderstandableEngine() {
             ) : result ? (
               <motion.div
                 key="result"
-                initial={{ opacity: 0, y: 60 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -60 }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.8 }}
                 className="w-full max-w-6xl mx-auto flex flex-col"
               >
-                <div className="mb-12 flex justify-start">
+                <div className="flex justify-start mb-8">
                   <button 
-                    onClick={() => { setConcept(""); setResult(null); }}
-                    className="font-mono text-sm uppercase tracking-widest font-black text-ink hover:text-accent transition-all flex items-center gap-3"
+                    onClick={() => { setConcept(""); setResult(null); setCurrentSlide(0); }}
+                    className="font-mono text-[10px] uppercase tracking-widest font-black text-ink/40 hover:text-accent transition-all flex items-center gap-2"
                   >
-                    ← Back to Exploration
+                    ← Exploration Home
                   </button>
                 </div>
-
-                {/* Back Button - Top Left */}
-                {currentSlide > 0 && currentSlide < 5 && (
-                  <button 
-                    onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
-                    className="absolute top-4 left-6 px-4 py-2 bg-surface border border-border rounded-lg text-ink/60 hover:text-accent transition-all font-mono uppercase tracking-widest text-xs shadow-sm"
-                  >
-                    ← Back
-                  </button>
-                )}
 
                 <AnimatePresence mode="wait">
                   <motion.div 
@@ -1875,72 +1885,108 @@ function UnderstandableEngine() {
                     transition={{ duration: 0.4 }}
                   >
                   {currentSlide === 0 && (
-                      <div className="flex flex-col gap-16">
-                        {/* THE HOOK */}
-                        <div className="space-y-8">
+                      <div className="flex flex-col gap-8">
+                        <div className="space-y-6">
                          <div className="flex justify-start">
                             <UnderstandableVoice text={result.hook} />
                          </div>
-                         <p className="font-sans font-bold text-3xl md:text-6xl text-accent leading-tight text-pretty">
+                         <p className="font-sans font-bold text-2xl md:text-5xl text-accent leading-tight">
                             "{result.hook}"
                          </p>
-                         <SectionLabel>The Main Idea</SectionLabel>
-                         <h2 className="text-4xl md:text-9xl font-display font-black uppercase tracking-tight leading-none text-ink">{concept}</h2>
+                         <h2 className="text-4xl md:text-8xl font-display font-black uppercase tracking-tight leading-none text-ink">{concept}</h2>
                         </div>
                       </div>
                   )}
 
                   {currentSlide === 1 && (
-                     <div className="space-y-16">
-                       <SectionLabel>The Abundance Frame</SectionLabel>
-                       <StateStamp label={result.axis1?.labelA || "When it works"} type="success" />
-                       <p className="text-2xl md:text-5xl font-sans leading-[1.4] font-bold text-ink transition-all">
-                        {result.axis1?.stateA || result.stateA}
-                       </p>
-                       <div className="flex flex-col gap-4">
-                        <ELI9Card content={result.axis1?.stateA_eli9} />
-                        <VoteUI content={result.axis1?.stateA || result.stateA} onRegenerate={() => understandTopic()} />
-                       </div>
+                     <div className="space-y-6">
+                        <SectionLabel className="!text-3xl md:!text-5xl text-center flex justify-center !font-display !font-black uppercase tracking-tighter">THE ABUNDANCE FRAME</SectionLabel>
+                        <div className="flex justify-center pt-2">
+                           <UnderstandableVoice text={result.axis1?.stateA || result.stateA} />
+                        </div>
+                        <p className="text-xl md:text-5xl font-sans leading-relaxed font-bold text-ink text-center text-pretty pt-4">
+                         {result.axis1?.stateA || result.stateA}
+                        </p>
+                        <div className="flex justify-center mt-6">
+                          <ELI9Card content={result.axis1?.stateA_eli9} />
+                        </div>
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() => understandTopic()}
+                            className="flex items-center gap-2 px-4 py-2 mt-2 text-[10px] font-mono uppercase tracking-widest text-ink/40 hover:text-accent transition-all border border-ink/10 rounded-full"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Recycle Example
+                          </button>
+                        </div>
                      </div>
                   )}
 
                   {currentSlide === 2 && (
-                    <div className="space-y-16">
-                      <SectionLabel>The Scarcity Frame</SectionLabel>
-                      <StateStamp label={result.axis1?.labelB || "When it's missing"} type="struggle" />
-                      <p className="text-2xl md:text-5xl font-sans leading-[1.4] font-bold text-ink transition-all">
-                        {result.axis1?.stateB || result.stateB}
-                      </p>
-                      <div className="flex flex-col gap-4">
-                        <ELI9Card content={result.axis1?.stateB_eli9} />
-                        <VoteUI content={result.axis1?.stateB || result.stateB} onRegenerate={() => understandTopic()} />
-                      </div>
+                    <div className="space-y-6">
+                        <SectionLabel className="!text-3xl md:!text-5xl text-center flex justify-center !font-display !font-black uppercase tracking-tighter">THE SCARCITY FRAME</SectionLabel>
+                        <div className="flex justify-center pt-2">
+                          <UnderstandableVoice text={result.axis1?.stateB || result.stateB} />
+                        </div>
+                        <p className="text-xl md:text-5xl font-sans leading-relaxed font-bold text-ink text-center text-pretty pt-4">
+                          {result.axis1?.stateB || result.stateB}
+                        </p>
+                        <div className="flex justify-center mt-6">
+                          <ELI9Card content={result.axis1?.stateB_eli9} />
+                        </div>
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() => understandTopic()}
+                            className="flex items-center gap-2 px-4 py-2 mt-2 text-[10px] font-mono uppercase tracking-widest text-ink/40 hover:text-accent transition-all border border-ink/10 rounded-full"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Recycle Example
+                          </button>
+                        </div>
                     </div>
                   )}
 
                   {currentSlide === 3 && (
-                    <div className="space-y-16">
-                        <SectionLabel>The Hidden Mechanism</SectionLabel>
-                        <p className="text-2xl md:text-5xl font-display font-bold leading-[1.1] tracking-tight text-ink">
+                      <div className="space-y-10">
+                        <SectionLabel>THE HEARTLAND MECHANISM</SectionLabel>
+                        <div className="flex justify-center pt-2">
+                          <UnderstandableVoice text={result.axis2.mechanism} />
+                        </div>
+                        <p className="text-2xl md:text-5xl font-display font-bold leading-tight tracking-tight text-ink">
                            {result.axis2.mechanism}
                         </p>
-                        <div className="flex flex-col gap-4">
-                          <ELI9Card content={result.axis2.mechanism_eli9} />
-                          <VoteUI content={result.axis2.mechanism} onRegenerate={() => understandTopic()} />
+                        <ELI9Card content={result.axis2.mechanism_eli9} />
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() => understandTopic()}
+                            className="flex items-center gap-2 px-4 py-2 mt-2 text-[10px] font-mono uppercase tracking-widest text-ink/40 hover:text-accent transition-all border border-ink/10 rounded-full"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Recycle Example
+                          </button>
                         </div>
                     </div>
                   )}
 
                   {currentSlide === 4 && (
-                      <div className="space-y-16">
-                          <SectionLabel>The Big Realization</SectionLabel>
-                          <p className="text-3xl md:text-7xl lg:text-8xl font-display font-black text-ink tracking-tighter">
+                      <div className="space-y-10">
+                          <SectionLabel>THE BIG REALIZATION</SectionLabel>
+                          <div className="flex justify-center pt-2">
+                             <UnderstandableVoice text={result.axis3?.zenith || result.zenith} />
+                          </div>
+                          <p className="text-3xl md:text-7xl lg:text-8xl font-display font-black text-ink tracking-tighter leading-tight">
                             "{result.axis3?.zenith || result.zenith}"
                           </p>
-                          <div className="flex flex-col gap-4">
-                            <ELI9Card content={result.axis3?.zenith_eli9} />
-                            <VoteUI content={result.axis3?.zenith || result.zenith} onRegenerate={() => understandTopic()} />
-                           </div>
+                          <ELI9Card content={result.axis3?.zenith_eli9} />
+                          <div className="flex justify-center">
+                            <button
+                                onClick={() => understandTopic()}
+                                className="flex items-center gap-2 px-4 py-2 mt-2 text-[10px] font-mono uppercase tracking-widest text-ink/40 hover:text-accent transition-all border border-ink/10 rounded-full"
+                            >
+                                <RefreshCw className="w-3 h-3" />
+                                Recycle Example
+                            </button>
+                          </div>
                       </div>
                   )}
 
@@ -1959,7 +2005,7 @@ function UnderstandableEngine() {
                                 onClick={() => { setConcept(""); setResult(null); setCurrentSlide(0); }}
                                 className="mt-8 font-mono text-sm uppercase tracking-[0.2em] font-bold border-b-2 border-emerald-600 hover:text-emerald-700"
                               >
-                                Exploration complete. Start new?
+                                Done. Start new?
                               </button>
                            </motion.div>
                          ) : saveSuccess ? (
@@ -1969,8 +2015,8 @@ function UnderstandableEngine() {
                              className="text-accent space-y-6 p-12 bg-accent/5 rounded-3xl border-2 border-accent/20 flex flex-col items-center"
                            >
                               <div className="text-8xl">✨</div>
-                              <p className="font-display text-3xl font-black uppercase tracking-[0.1em]">Understanding Locked In!</p>
-                              <p className="font-sans text-lg opacity-70">Saved to your personal collection.</p>
+                              <p className="font-display text-3xl font-black uppercase tracking-[0.1em]">Insight Locked In!</p>
+                              <p className="font-sans text-lg opacity-70">This is now part of your personal collection.</p>
                               
                               <div className="flex flex-col gap-4 w-full mt-8">
                                 <button 
@@ -1983,26 +2029,26 @@ function UnderstandableEngine() {
                                   onClick={() => { setConcept(""); setResult(null); setCurrentSlide(0); }}
                                   className="mt-4 font-mono text-xs uppercase tracking-[0.2em] font-bold opacity-50 hover:opacity-100 transition-opacity"
                                 >
-                                  Done for now
+                                  Return Home
                                 </button>
                               </div>
                            </motion.div>
                          ) : (
-                           <div className="flex flex-col gap-12 w-full max-w-xl">
-                              <p className="font-display text-4xl md:text-5xl font-black text-ink">Does it click now?</p>
+                           <div className="flex flex-col gap-10 w-full max-w-xl">
+                              <p className="font-display text-4xl md:text-5xl font-black text-ink">Keep Learning?</p>
                               
-                              <div className="flex flex-col gap-6 w-full">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                                <button 
-                                 onClick={saveToLibrary}
-                                 className="w-full font-display text-2xl font-bold bg-accent text-white py-6 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-accent/20"
+                                 onClick={() => { setCurrentSlide(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                 className="w-full font-mono text-sm uppercase tracking-[0.2em] font-bold text-ink/50 py-5 border-2 border-ink/10 rounded-2xl hover:bg-ink/5 transition-all text-left px-8"
                                >
-                                 Lock it in!
+                                 Recycle Concept
                                </button>
                                <button 
-                                 onClick={() => { setCurrentSlide(0); }}
-                                 className="w-full font-mono text-lg uppercase tracking-[0.2em] font-bold text-ink/70 py-6 border-2 border-ink/10 rounded-2xl hover:bg-ink/5 transition-all"
-                                >
-                                 Not quite, another example
+                                 onClick={saveToLibrary}
+                                 className="w-full font-display text-xl font-bold bg-accent text-white py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-accent/20"
+                               >
+                                 I Understood This!
                                </button>
                                </div>
                            </div>
@@ -2017,14 +2063,14 @@ function UnderstandableEngine() {
                   <div className="flex items-center justify-end mt-12 gap-4">
                      {currentSlide > 0 && (
                         <button 
-                         onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
+                         onClick={prevSlide}
                          className="px-8 py-3 border-2 border-current/20 rounded-2xl hover:bg-current/5 transition-all font-mono uppercase tracking-widest text-sm font-bold text-current"
                        >
                          ← Previous
                        </button>
                      )}
                      <button 
-                       onClick={() => setCurrentSlide(Math.min(5, currentSlide + 1))}
+                       onClick={nextSlide}
                        className="px-12 py-4 bg-emerald-500 text-white rounded-2xl hover:bg-emerald-600 transition-all font-display uppercase tracking-widest text-lg font-bold shadow-lg shadow-emerald-500/20"
                      >
                        Next →
@@ -2115,19 +2161,19 @@ function UnderstandableEngine() {
 
       {/* MOBILE BOTTOM NAV */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full bg-bg border-t border-border z-50 flex justify-around p-4">
-        <button onClick={() => { setConcept(""); setResult(null); setShowIndex(false); setShowCommunity(false); }} className="flex flex-col items-center gap-1 text-ink">
+        <button onClick={() => { setConcept(""); setResult(null); setShowIndex(false); setShowCommunity(false); setShowAccount(false); }} className="flex flex-col items-center gap-1 text-ink">
           <Sparkles className="w-6 h-6" />
           <span className="text-[10px] uppercase font-black">Home</span>
         </button>
-        <button onClick={() => { setShowCommunity(true); setShowIndex(false); }} className="flex flex-col items-center gap-1 text-emerald-600">
+        <button onClick={() => { setShowCommunity(true); setShowIndex(false); setShowAccount(false); }} className="flex flex-col items-center gap-1 text-emerald-600">
           <Globe className="w-6 h-6" />
           <span className="text-[10px] uppercase font-black">Board</span>
         </button>
-        <button onClick={() => { setShowIndex(true); setShowCommunity(false); }} className="flex flex-col items-center gap-1 text-ink">
+        <button onClick={() => { setShowIndex(true); setShowCommunity(false); setShowAccount(false); }} className="flex flex-col items-center gap-1 text-ink">
           <Save className="w-6 h-6" />
           <span className="text-[10px] uppercase font-black">Saved</span>
         </button>
-        <button onClick={() => setShowAccount(true)} className="flex flex-col items-center gap-1 text-ink">
+        <button onClick={() => setShowAccount(!showAccount)} className="flex flex-col items-center gap-1 text-ink">
           <Smile className="w-6 h-6" />
           <span className="text-[10px] uppercase font-black">Profile</span>
         </button>
