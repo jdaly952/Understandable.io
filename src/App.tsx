@@ -50,7 +50,7 @@ import {
   increment,
   limit
 } from "firebase/firestore";
-import { Shield, Save, CheckCircle2, AlertCircle, AlertTriangle, LogIn, ChevronLeft, Trash2, Download, ArrowRight, RotateCcw, Mail, Volume2, VolumeX, Loader2, Sparkles, Rocket, Heart, Smile, Lightbulb, Cloud, Telescope, Ghost, CircleDashed, Search } from "lucide-react";
+import { Shield, Save, CheckCircle2, AlertCircle, AlertTriangle, LogIn, ChevronLeft, Trash2, Download, ArrowRight, RotateCcw, Mail, Volume2, VolumeX, Loader2, Sparkles, Rocket, Heart, Smile, Lightbulb, Cloud, Telescope, Ghost, CircleDashed, Search, Globe } from "lucide-react";
 import { GoogleGenAI, Modality } from "@google/genai";
 import { SYSTEM_PROMPT } from "./prompt";
 
@@ -780,6 +780,9 @@ function UnderstandableEngine() {
   const [authReady, setAuthReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isCommunityShared, setIsCommunityShared] = useState(false);
+  const [showCommunity, setShowCommunity] = useState(false);
+  const [communityShares, setCommunityShares] = useState<any[]>([]);
   
   // --- Coaster State ---
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -891,6 +894,19 @@ function UnderstandableEngine() {
         console.warn("Public logs currently awaiting server sync.");
       });
 
+      // Setup listener for community shares
+      const qCommunity = query(
+        collection(db, "community_shares"),
+        orderBy("createdAt", "desc"),
+        limit(50)
+      );
+      const unsubscribeCommunity = onSnapshot(qCommunity, (snapshot) => {
+        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCommunityShares(docs);
+      }, (err) => {
+        console.warn("Community shares sync error", err);
+      });
+
       if (u) {
         // Sync user to Firestore
         const userRef = doc(db, "users", u.uid);
@@ -991,9 +1007,29 @@ function UnderstandableEngine() {
       ]);
       
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, "saved_topics");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const shareToCommunity = async () => {
+    if (!user || !result || isCommunityShared) return;
+    setSaving(true);
+    try {
+      await addDoc(collection(db, "community_shares"), {
+        uid: user.uid,
+        userName: user.displayName,
+        userPhoto: user.photoURL,
+        concept: concept,
+        payload: result,
+        category: category,
+        createdAt: serverTimestamp()
+      });
+      setIsCommunityShared(true);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, "community_shares");
     } finally {
       setSaving(false);
     }
@@ -1003,6 +1039,8 @@ function UnderstandableEngine() {
     const activeTopic = overrideTopic || concept;
     if (!activeTopic.trim()) return;
     
+    setIsCommunityShared(false);
+    setSaveSuccess(false);
     if (overrideTopic) {
       setConcept(overrideTopic);
     }
@@ -1144,7 +1182,7 @@ function UnderstandableEngine() {
 
   if (!isRobotVerified) {
     return (
-      <div className="min-h-screen bg-[#FFFDF9] text-ink flex flex-col items-center justify-center p-4 md:p-8 font-serif relative overflow-hidden">
+      <div className="min-h-screen bg-[#FFFBFB] text-ink flex flex-col items-center justify-center p-4 md:p-8 font-serif relative overflow-hidden">
         {/* Whimsical Background Elements */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.div 
@@ -1417,6 +1455,14 @@ function UnderstandableEngine() {
               </Tooltip>
             )}
             {authReady && (
+              <button 
+                onClick={() => setShowCommunity(true)}
+                className="hidden md:flex items-center gap-2 font-display text-sm uppercase tracking-widest font-black text-emerald-600 bg-emerald-50 px-5 py-2.5 rounded-full border border-emerald-200 hover:bg-emerald-100 transition-all"
+              >
+                CommunityBoard 🌎
+              </button>
+            )}
+            {authReady && (
               user ? (
                 <div className="relative">
                   <Tooltip text="My Profile">
@@ -1655,7 +1701,71 @@ function UnderstandableEngine() {
         <section ref={resultRef} className={`w-full ${!showIndex ? 'md:w-[68%]' : 'md:w-full'} flex flex-col p-6 md:p-12 lg:px-24 lg:py-24 transition-all duration-1000 bg-bg`}>
           <div className="flex-1 flex flex-col justify-center py-10">
             <AnimatePresence mode="wait">
-            {showIndex ? (
+            {showCommunity ? (
+              <motion.div
+                key="community"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col h-full"
+              >
+                <div className="mb-12 md:mb-24 flex flex-col md:flex-row items-start md:items-center justify-between border-b-4 md:border-b-8 border-emerald-500 pb-12 md:pb-20 gap-8">
+                  <div className="flex flex-col">
+                    <h2 className="font-display text-4xl md:text-7xl font-black uppercase tracking-tight text-emerald-600">Community Board 🌎</h2>
+                    <p className="font-mono text-sm uppercase tracking-widest opacity-60">Insights that clicked for everyone</p>
+                  </div>
+                  <button onClick={() => setShowCommunity(false)} className="w-full md:w-auto font-mono text-xs md:text-lg uppercase tracking-widest font-black border-2 border-ink px-8 py-4 md:px-12 md:py-6 hover:bg-ink hover:text-bg transition-all shadow-[8px_8px_0_0_rgba(16,185,129,0.1)] rounded-xl text-ink">← Back to Synthesis</button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto pr-10 custom-scrollbar">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
+                    {communityShares.map((share, i) => (
+                      <button
+                        key={share.id}
+                        onClick={() => {
+                          setResult(share.payload);
+                          setConcept(share.concept);
+                          setShowCommunity(false);
+                          setShowIndex(false);
+                          setCurrentSlide(0);
+                        }}
+                        className="group flex flex-col items-start p-8 transition-all hover:bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 hover:border-emerald-500 text-left gap-6 shadow-sm hover:shadow-xl hover:-translate-y-1"
+                      >
+                        <div className="flex items-center gap-4 w-full">
+                          {share.userPhoto ? (
+                            <img src={share.userPhoto} alt={share.userName} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
+                              {share.userName?.charAt(0) || "?"}
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="font-mono text-[10px] uppercase tracking-widest font-black opacity-40">Shared by</span>
+                            <span className="font-sans text-xs font-bold">{share.userName || "Anonymous Explorer"}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-3 w-full">
+                           <h3 className="text-xl font-black uppercase tracking-tight leading-none group-hover:text-emerald-600 transition-colors">{share.concept}</h3>
+                           <p className="text-sm opacity-70 font-sans leading-relaxed line-clamp-3">"{(share.payload?.zenith || share.payload?.axis3?.zenith || "A new understanding...")}"</p>
+                        </div>
+
+                        <div className="mt-auto pt-4 border-t border-emerald-100 w-full flex items-center justify-between">
+                           <span className="font-mono text-[9px] uppercase tracking-widest py-1 px-2 bg-emerald-100 text-emerald-700 rounded-md font-bold">{(share.category || "General").toUpperCase()}</span>
+                           <span className="font-mono text-[9px] opacity-40 uppercase">{new Date(share.createdAt?.seconds * 1000).toLocaleDateString()}</span>
+                        </div>
+                      </button>
+                    ))}
+                    {communityShares.length === 0 && (
+                      <div className="col-span-full py-40 text-center flex flex-col items-center gap-8">
+                         <div className="text-8xl opacity-20">🍃</div>
+                         <p className="font-sans text-4xl opacity-70 leading-normal max-w-lg">The community board is currently silent. Be the first to share an insight! ✨</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            ) : showIndex ? (
               <motion.div
                 key="index"
                 initial={{ opacity: 0 }}
@@ -1836,21 +1946,46 @@ function UnderstandableEngine() {
 
                   {currentSlide === 5 && (
                     <div className="flex flex-col items-center justify-center min-h-[400px] text-center gap-12">
-                         {saveSuccess ? (
+                         {isCommunityShared ? (
                            <motion.div 
                              initial={{ scale: 0.9, opacity: 0 }}
                              animate={{ scale: 1, opacity: 1 }}
-                             className="text-accent space-y-6 p-12 bg-accent/5 rounded-3xl border-2 border-accent/20"
+                             className="text-emerald-600 space-y-6 p-12 bg-emerald-50 rounded-3xl border-2 border-emerald-200"
                            >
-                              <div className="text-8xl">✨</div>
-                              <p className="font-display text-3xl font-black uppercase tracking-[0.1em]">Understanding Locked In!</p>
-                              <p className="font-sans text-lg opacity-70">Thank you for helping the community improve.</p>
+                              <div className="text-8xl">🌎</div>
+                              <p className="font-display text-3xl font-black uppercase tracking-[0.1em]">Shared with Community!</p>
+                              <p className="font-sans text-lg opacity-70">Your insight is now live on the community board.</p>
                               <button 
                                 onClick={() => { setConcept(""); setResult(null); setCurrentSlide(0); }}
-                                className="mt-8 font-mono text-sm uppercase tracking-[0.2em] font-bold border-b-2 border-accent hover:text-accent"
+                                className="mt-8 font-mono text-sm uppercase tracking-[0.2em] font-bold border-b-2 border-emerald-600 hover:text-emerald-700"
                               >
                                 Exploration complete. Start new?
                               </button>
+                           </motion.div>
+                         ) : saveSuccess ? (
+                           <motion.div 
+                             initial={{ scale: 0.9, opacity: 0 }}
+                             animate={{ scale: 1, opacity: 1 }}
+                             className="text-accent space-y-6 p-12 bg-accent/5 rounded-3xl border-2 border-accent/20 flex flex-col items-center"
+                           >
+                              <div className="text-8xl">✨</div>
+                              <p className="font-display text-3xl font-black uppercase tracking-[0.1em]">Understanding Locked In!</p>
+                              <p className="font-sans text-lg opacity-70">Saved to your personal collection.</p>
+                              
+                              <div className="flex flex-col gap-4 w-full mt-8">
+                                <button 
+                                  onClick={shareToCommunity}
+                                  className="w-full bg-emerald-500 text-white font-display text-xl font-bold py-5 rounded-2xl shadow-lg shadow-emerald-500/20 hover:scale-[1.02] transition-all"
+                                >
+                                  Share to Community 🌎
+                                </button>
+                                <button 
+                                  onClick={() => { setConcept(""); setResult(null); setCurrentSlide(0); }}
+                                  className="mt-4 font-mono text-xs uppercase tracking-[0.2em] font-bold opacity-50 hover:opacity-100 transition-opacity"
+                                >
+                                  Done for now
+                                </button>
+                              </div>
                            </motion.div>
                          ) : (
                            <div className="flex flex-col gap-12 w-full max-w-xl">
@@ -1866,7 +2001,7 @@ function UnderstandableEngine() {
                                <button 
                                  onClick={() => { setCurrentSlide(0); }}
                                  className="w-full font-mono text-lg uppercase tracking-[0.2em] font-bold text-ink/70 py-6 border-2 border-ink/10 rounded-2xl hover:bg-ink/5 transition-all"
-                               >
+                                >
                                  Not quite, another example
                                </button>
                                </div>
@@ -1980,15 +2115,19 @@ function UnderstandableEngine() {
 
       {/* MOBILE BOTTOM NAV */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full bg-bg border-t border-border z-50 flex justify-around p-4">
-        <button onClick={() => { /* Navigate Home */ }} className="flex flex-col items-center gap-1 text-ink">
+        <button onClick={() => { setConcept(""); setResult(null); setShowIndex(false); setShowCommunity(false); }} className="flex flex-col items-center gap-1 text-ink">
           <Sparkles className="w-6 h-6" />
           <span className="text-[10px] uppercase font-black">Home</span>
         </button>
-        <button onClick={() => setShowIndex(true)} className="flex flex-col items-center gap-1 text-ink">
+        <button onClick={() => { setShowCommunity(true); setShowIndex(false); }} className="flex flex-col items-center gap-1 text-emerald-600">
+          <Globe className="w-6 h-6" />
+          <span className="text-[10px] uppercase font-black">Board</span>
+        </button>
+        <button onClick={() => { setShowIndex(true); setShowCommunity(false); }} className="flex flex-col items-center gap-1 text-ink">
           <Save className="w-6 h-6" />
           <span className="text-[10px] uppercase font-black">Saved</span>
         </button>
-        <button onClick={() => { /* Profile/Sign In */ }} className="flex flex-col items-center gap-1 text-ink">
+        <button onClick={() => setShowAccount(true)} className="flex flex-col items-center gap-1 text-ink">
           <Smile className="w-6 h-6" />
           <span className="text-[10px] uppercase font-black">Profile</span>
         </button>

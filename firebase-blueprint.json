@@ -98,6 +98,45 @@
         "status": { "type": "string" }
       },
       "required": ["refinementId", "explanationId"]
+    },
+    "CommunityShare": {
+      "title": "Community Share",
+      "description": "Topic shared with the community",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "concept": { "type": "string" },
+        "payload": { "type": "object" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "concept", "payload", "createdAt"]
+    },
+    "SavedTopic": {
+      "title": "Saved Topic",
+      "description": "Topic saved by a user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "concept": { "type": "string" },
+        "result": { "type": "object" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "concept", "result", "createdAt"]
+    },
+    "SynthesisLog": {
+      "title": "Synthesis Log",
+      "description": "Log of synthesis requests",
+      "type": "object",
+      "properties": {
+        "concept": { "type": "string" },
+        "status": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["concept", "timestamp"]
     }
   },
   "firestore": {
@@ -124,6 +163,18 @@
     "/refinements/{refinementId}": {
       "schema": "Refinement",
       "description": "Proposed refinements"
+    },
+    "/community_shares/{shareId}": {
+      "schema": "CommunityShare",
+      "description": "Publicly shared insights"
+    },
+    "/saved_topics/{topicId}": {
+      "schema": "SavedTopic",
+      "description": "User's personal saved topics"
+    },
+    "/synthesis_logs/{logId}": {
+      "schema": "SynthesisLog",
+      "description": "System synthesis logs"
     }
   }
 }
