@@ -1,14 +1,29 @@
 import React, { useState, useRef, useEffect, Component } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { auth, db, handleFirestoreError, OperationType, testFirebaseConnection, firebaseConfig } from "./firebase";
+import { deleteDoc } from "firebase/firestore";
 import CoasterCustomizer from "./components/CoasterCustomizer";
 import { Tooltip } from "./components/Tooltip";
 import { ShareButton } from "./components/ShareButton";
+
+import { GoogleGenAI, Modality, Type } from "@google/genai";
+import { SYSTEM_PROMPT } from "./prompt";
 
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
+  });
+};
+
+import confetti from 'canvas-confetti';
+
+const triggerSuccessConfetti = () => {
+  confetti({
+    particleCount: 150,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ['#4A6741', '#FFD700', '#FF8C00'] // Use theme colors
   });
 };
 
@@ -51,9 +66,6 @@ import {
   limit
 } from "firebase/firestore";
 import { Shield, Save, CheckCircle2, AlertCircle, AlertTriangle, LogIn, ChevronLeft, Trash2, Download, ArrowRight, RotateCcw, Mail, Volume2, VolumeX, Loader2, Sparkles, Rocket, Heart, Smile, Lightbulb, Cloud, Telescope, Ghost, CircleDashed, Search, Globe, RefreshCw } from "lucide-react";
-import { GoogleGenAI, Modality } from "@google/genai";
-import { SYSTEM_PROMPT } from "./prompt";
-
 // --- SVG Generation for Glowforge ---
 function wrapText(text: string, maxCharsPerLine: number): string[] {
   if (!text) return [];
@@ -157,17 +169,12 @@ const themeColors = {
   studio: "border-white/20"
 };
 
-import { Tooltip } from "./components/Tooltip";
 
 const CURIOUS_CONCEPTS = [
-  "Why do we dream?", "How does the stock market work?", "Why do we get nervous?",
-  "How does the internet work?", "Why is the sky blue?", "How does memory work?",
-  "Why do habits form?", "What is inflation?", "How does GPS know where I am?",
-  "Why do we laugh?", "How do batteries store electricity?", "What is a mortgage?",
-  "Why does the moon change shape?", "How do vaccines work?", "Why do we need sleep?",
-  "How do airplanes stay in the air?", "Why is salt used on icy roads?", "How does a touch screen work?",
-  "What is the blockchain?", "Why do leaves change color?", "How does 5G work?",
-  "Why do we have fingerprints?", "How does a microwave cook food?", "What is the greenhouse effect?", "How do mirrors work?", "Why do we yawn?", "How does music affect our brain?"
+  "Imposter Syndrome",
+  "How Does the Internet Work?",
+  "Opportunity Cost",
+  "Why We Self-Sabotage"
 ];
 
 const MAX_CONCEPT_LENGTH = 108;
@@ -396,7 +403,7 @@ const UnderstandableVoice = ({ text }: { text: string }) => {
     setLoading(true);
     try {
       const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Understandable Key Missing");
+      if (!apiKey) throw new Error("Understandable Engine Key Missing. Please check your environment variables.");
 
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
@@ -543,7 +550,7 @@ const UnderstandableLogo = ({ className }: { className?: string }) => (
               stroke="currentColor" strokeWidth="6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     </div>
-    <span className="font-display text-xl md:text-3xl font-black uppercase tracking-[0.2em] text-ink">Understandable.io</span>
+    <span className="hidden md:block font-display text-xl md:text-3xl font-black uppercase tracking-[0.2em] text-ink">Understandable.io</span>
   </div>
 );
 
@@ -784,9 +791,18 @@ function UnderstandableEngine() {
   const [showCommunity, setShowCommunity] = useState(false);
   const [communityShares, setCommunityShares] = useState<any[]>([]);
   
+  const deleteTopic = async (topicId: string) => {
+    try {
+      await deleteDoc(doc(db, "saved_topics", topicId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `saved_topics/${topicId}`);
+    }
+  };
+
   // --- Coaster State ---
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
   const [learningStyleIndex, setLearningStyleIndex] = useState(0);
 
   const LEARNING_STYLES = ["analogy", "scientific", "visceral/emotional", "narrative"];
@@ -843,8 +859,8 @@ function UnderstandableEngine() {
   // --- Suggestion Logic ---
   const refreshSuggestions = () => {
     const concepts = [...CURIOUS_CONCEPTS];
-    // Also include some from the database if available, but randomly
-    const combined = Array.from(new Set([...concepts, ...globalLogs.map(l => l.concept)]));
+    // Use only the static list
+    const combined = Array.from(new Set([...concepts]));
     const selected: any[] = [];
     const count = 4;
     
@@ -1022,13 +1038,14 @@ function UnderstandableEngine() {
     setSaving(true);
     console.log("Understandable: Locking in insight...");
     try {
-      const slug = concept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+      const cleanConcept = concept.replace(/\s*-\s*explain in greater depth and detail\s*$/gi, "");
+      const slug = cleanConcept.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
       const globalRef = doc(db, "global_index", slug);
       
       await Promise.all([
         addDoc(collection(db, "saved_topics"), {
           uid: user.uid,
-          concept: concept,
+          concept: cleanConcept,
           payload: result,
           isManuallySaved: true,
           category: category,
@@ -1076,24 +1093,22 @@ function UnderstandableEngine() {
     }
   };
 
-  const understandTopic = async (overrideTopic?: string) => {
-    const activeTopic = overrideTopic || concept;
-    if (!activeTopic.trim()) return;
+  const understandTopic = async (overrideTopic?: string, targetStyleIndex?: number) => {
+    let baseTopic = overrideTopic || concept;
+    baseTopic = baseTopic.replace(/\s*-\s*explain in greater depth and detail\s*$/gi, "");
+    if (!baseTopic.trim()) return;
     
-    // Cycle style
-    let newIndex = learningStyleIndex;
-    if (overrideTopic) {
-        newIndex = 0; // New concept, reset
-    } else {
-        newIndex = (learningStyleIndex + 1) % LEARNING_STYLES.length;
-    }
+    // Cycle or select style
+    let newIndex = targetStyleIndex !== undefined ? targetStyleIndex : (overrideTopic ? 0 : (learningStyleIndex + 1) % LEARNING_STYLES.length);
+    
     setLearningStyleIndex(newIndex);
+    setCurrentSlide(0);
     const selectedStyle = LEARNING_STYLES[newIndex];
     
     setIsCommunityShared(false);
     setSaveSuccess(false);
     if (overrideTopic) {
-      setConcept(overrideTopic);
+      setConcept(baseTopic);
     }
 
     // Auto-verify if they haven't yet, keeping momentum
@@ -1113,27 +1128,29 @@ function UnderstandableEngine() {
 
     try {
       const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("Gemini API key not configured. Please add it to your environment variables.");
-      }
+      if (!apiKey) throw new Error("Understandable Engine Key Missing. Please check your environment variables.");
 
       const ai = new GoogleGenAI({ apiKey });
       
-      const response = await ai.models.generateContent({
+      const prompt = `Generate a 3-6-9 Triangulation for the concept: "${baseTopic}". If the concept is complete nonsense, a non-concept, or unrecognizable, return a JSON with a "valid" field set to false and a "mechanism" field explaining that the topic needs to be clearer. If valid, return "valid": true, "hook", "analogy", and "mechanism" fields. Use a ${selectedStyle} learning style for the explanation.`;
+      
+      const resultResponse = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Generate a 3-6-9 Triangulation for the concept: ${activeTopic}. Use a ${selectedStyle} learning style for the explanation.`,
+        contents: prompt,
         config: {
           responseMimeType: "application/json",
           systemInstruction: SYSTEM_PROMPT
         }
       });
 
-      if (!response.text) {
+      const text = resultResponse.text;
+      
+      if (!text) {
         throw new Error("No response returned from the engine.");
       }
 
       // Robust JSON extraction - find first '{' and last '}'
-      let cleanJson = response.text.trim();
+      let cleanJson = text.trim();
       const firstBrace = cleanJson.indexOf('{');
       const lastBrace = cleanJson.lastIndexOf('}');
       
@@ -1146,6 +1163,14 @@ function UnderstandableEngine() {
 
       try {
         const data = JSON.parse(cleanJson);
+        
+        // Detect nonsensical topic placeholder
+        if (data.valid === false) {
+          setError(data.mechanism || "That concept doesn't seem to be a recognized idea. Could you try phrasing it differently or being more specific?");
+          setLoading(false);
+          return;
+        }
+
         setResult(data);
 
         // Auto-scroll to result
@@ -1153,20 +1178,20 @@ function UnderstandableEngine() {
           resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 500);
 
-        const slug = activeTopic.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+        const slug = baseTopic.toLowerCase().trim().replace(/[^a-z0-9]/gi, '_').substring(0, 50);
         const globalRef = doc(db, "global_index", slug);
 
         // --- AUTOMATIC PERSISTENCE FOR LEARNING & RANKING ---
         Promise.all([
           addDoc(collection(db, "synthesis_logs"), {
-            concept: activeTopic,
+            concept: baseTopic,
             payload: data,
             uid: user?.uid || null,
             isManuallySaved: false,
             createdAt: serverTimestamp()
           }),
           setDoc(globalRef, {
-            concept: activeTopic,
+            concept: baseTopic,
             rank: increment(1),
             lastPayload: data,
             updatedAt: serverTimestamp()
@@ -1175,7 +1200,7 @@ function UnderstandableEngine() {
           console.warn("Log persistence failed:", err);
         });
       } catch (e) {
-        console.error("JSON Parse Error. Raw Text:", response.text);
+        console.error("JSON Parse Error. Raw Text:", text);
         throw new Error("The engine returned a corrupted insight. Please try refining your topic.");
       }
 
@@ -1216,6 +1241,26 @@ function UnderstandableEngine() {
       understandTopic();
     }
   };
+
+  const LearningStyleSwitcher = ({ currentStyleIndex, onSwitch }: { currentStyleIndex: number; onSwitch: (index: number) => void }) => (
+    <div className="flex flex-wrap gap-2 mt-8 p-4 border border-border rounded-xl bg-surface items-center justify-center">
+      <span className="text-[10px] font-mono uppercase tracking-widest opacity-50 mr-2">Style:</span>
+      {LEARNING_STYLES.map((style, index) => (
+        <button
+          key={style}
+          onClick={() => onSwitch(index)}
+          disabled={loading}
+          className={`px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-lg border transition-all ${
+            currentStyleIndex === index 
+              ? 'bg-accent text-white border-accent shadow-sm' 
+              : 'bg-bg text-ink/70 border-border hover:border-accent/30'
+          }`}
+        >
+          {style}
+        </button>
+      ))}
+    </div>
+  );
 
   const handleDownloadSVG = () => {
     if (!result) return;
@@ -1373,7 +1418,7 @@ function UnderstandableEngine() {
                   <div className="flex items-center justify-between text-xs md:text-sm font-black uppercase tracking-[0.3em] opacity-40 font-mono">
                     <span className="flex items-center gap-3">
                        <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
-                       Hello! Idea {onboardingStep + 1} of 4
+                       Hello! pg. {onboardingStep + 1} of 4
                     </span>
                     <button 
                       onClick={() => {
@@ -1481,7 +1526,7 @@ function UnderstandableEngine() {
         </div>
 
         {/* Header */}
-        <header className="px-4 md:px-12 py-3 md:py-6 flex justify-between items-center shrink-0 sticky top-0 z-30 transition-all bg-bg/80 backdrop-blur-2xl border-b border-border">
+        <header className="px-6 md:px-12 py-3 md:py-6 flex justify-between items-center shrink-0 sticky top-0 z-30 transition-all bg-bg/80 backdrop-blur-2xl border-b border-border">
           <div className="flex items-center gap-4 md:gap-8">
             <Tooltip text="Go Home">
               <div className="flex flex-col group cursor-pointer transition-all hover:opacity-100 uppercase text-ink" 
@@ -1494,7 +1539,7 @@ function UnderstandableEngine() {
             </Tooltip>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
             {result && (
               <Tooltip text="Start a new search">
                 <button 
@@ -1507,10 +1552,10 @@ function UnderstandableEngine() {
             )}
             {authReady && (
               <button 
-                onClick={() => setShowCommunity(true)}
-                className="hidden md:flex items-center gap-2 font-display text-sm uppercase tracking-widest font-black text-emerald-600 bg-emerald-50 px-5 py-2.5 rounded-full border border-emerald-200 hover:bg-emerald-100 transition-all"
+                onClick={() => alert("Community Board is coming soon!")}
+                className="hidden md:flex items-center gap-2 font-display text-sm uppercase tracking-widest font-black text-gray-500 bg-gray-50 px-5 py-2.5 rounded-full border border-gray-200 cursor-not-allowed transition-all"
               >
-                CommunityBoard 🌎
+                Community (Coming Soon) 🌎
               </button>
             )}
             {authReady && (
@@ -1538,7 +1583,7 @@ function UnderstandableEngine() {
                   {/* Account Dropdown */}
                   <AnimatePresence>
                     {showAccount && (
-                      <div className="fixed inset-0 z-40 bg-black/5" onClick={() => setShowAccount(false)}>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowAccount(false)}>
                         <motion.div
                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1553,7 +1598,7 @@ function UnderstandableEngine() {
                               <span className="text-xl font-display font-bold uppercase">{user.displayName}</span>
                               <span className="text-xs font-mono opacity-60">{user.email}</span>
                             </div>
-                            <button className="text-xs font-mono underline opacity-60 hover:text-accent w-fit mt-1">Preferences</button>
+                            {/* <button className="text-xs font-mono underline opacity-60 hover:text-accent w-fit mt-1">Preferences</button> */}
                           </div>
 
                           <div className="flex flex-col gap-6">
@@ -1574,10 +1619,10 @@ function UnderstandableEngine() {
 
                           <div className="flex flex-col gap-6 border-t-2 border-border pt-8">
                             <button 
-                              onClick={() => { setShowAccount(false); setShowCommunity(true); }}
-                              className="font-mono text-sm uppercase tracking-[0.2em] font-black hover:text-accent transition-all text-left"
+                              onClick={() => alert("Community Board is coming soon!")}
+                              className="font-mono text-sm uppercase tracking-[0.2em] font-black text-gray-400 cursor-not-allowed transition-all text-left"
                             >
-                              Community
+                              Community (Coming Soon)
                             </button>
                           </div>
 
@@ -1599,7 +1644,7 @@ function UnderstandableEngine() {
                 <Tooltip text="Sign in to your account">
                   <button 
                     onClick={handleLogin}
-                    className="font-mono text-sm md:text-xl tracking-[0.1em] md:tracking-[0.2em] uppercase transition-all font-black border-2 border-ink px-6 py-3 md:px-12 md:py-6 hover:bg-ink hover:text-bg text-ink rounded-xl md:rounded-2xl shadow-[4px_4px_0_0_rgba(0,0,0,0.05)] md:shadow-[8px_8px_0_0_rgba(0,0,0,0.05)]"
+                    className="font-mono text-xs md:text-xl tracking-[0.1em] md:tracking-[0.2em] uppercase transition-all font-black border-2 border-ink px-4 py-2 md:px-12 md:py-6 hover:bg-ink hover:text-bg text-ink rounded-xl md:rounded-2xl shadow-[4px_4px_0_0_rgba(0,0,0,0.05)] md:shadow-[8px_8px_0_0_rgba(0,0,0,0.05)]"
                   >
                     SIGN IN
                   </button>
@@ -1659,11 +1704,11 @@ function UnderstandableEngine() {
                 </div>
               )}
 
-              <div className="mt-2 flex justify-between items-center">
+              <div className="mt-2 flex justify-between items-center px-6 py-2">
                 {!user && (
                   <button 
                     onClick={handleLogin}
-                    className="font-mono text-[10px] uppercase tracking-widest text-accent font-black hover:opacity-100 transition-opacity opacity-80"
+                    className="font-mono text-[10px] uppercase tracking-widest text-accent font-black hover:opacity-100 transition-opacity opacity-80 whitespace-nowrap"
                   >
                     Sign in to save
                   </button>
@@ -1686,6 +1731,9 @@ function UnderstandableEngine() {
                 >
                   {loading ? "Synthesizing..." : "Understand it!"}
                 </button>
+                <div className="mt-4">
+                  <LearningStyleSwitcher currentStyleIndex={learningStyleIndex} onSwitch={(index) => setLearningStyleIndex(index)} />
+                </div>
               </div>
 
               {/* SUGGESTIONS */}
@@ -1834,7 +1882,7 @@ function UnderstandableEngine() {
                           ${indexType === type ? "scale-105 md:scale-110 text-accent underline underline-offset-8 md:underline-offset-[24px] decoration-4 md:decoration-8" : "opacity-30 hover:opacity-100"}
                         `}
                       >
-                        {type === "personal" ? "My Past Topics" : "Explore Topics"}
+                        {type === "personal" ? "My Past Topics" : "Explore"}
                       </button>
                     ))}
                   </div>
@@ -1859,13 +1907,27 @@ function UnderstandableEngine() {
                             setBannerBgClass(ax.bannerBgClass || "bg-accent/5");                
                             setBannerTextClass(ax.bannerTextClass || "text-accent");
                           }}
-                          className={`group flex flex-col items-start justify-between p-6 transition-all rounded-lg border-2 text-left gap-4 ${ax.bannerBgClass || 'bg-surface'} ${ax.bannerTextClass || 'text-ink'} hover:opacity-80`}
+                          className={`group flex flex-col items-start justify-between p-4 transition-all rounded-lg border-2 text-left gap-2 ${ax.bannerBgClass || 'bg-surface'} ${ax.bannerTextClass || 'text-ink'} hover:opacity-80 h-[220px] overflow-hidden`}
                         >
                           <div className="flex flex-col gap-2 w-full">
                              <div className="flex items-center gap-3">
                                <span className="font-mono text-xs opacity-60 uppercase tracking-widest font-black shrink-0">{(i+1).toString().padStart(2, '0')}</span>
                                <span className={`text-lg font-black uppercase tracking-[0.1em] break-words line-clamp-2`}>{ax.concept}</span>
                                <span className={`ml-auto font-mono text-[10px] px-2 py-1 rounded ${ax.bannerBgClass || 'bg-accent/10'} ${ax.bannerTextClass || 'text-accent'}`}>{(ax.domain || ax.payload?.domain || "General").toUpperCase()}</span>
+                               
+                               {indexType === "personal" && (
+                                 <div 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     deleteTopic(ax.id);
+                                   }}
+                                   className="ml-2 p-1 hover:bg-ink/10 rounded-full cursor-pointer"
+                                   title="Delete topic"
+                                   role="button"
+                                 >
+                                   🗑️
+                                 </div>
+                               )}
                              </div>
                              <p className="text-sm opacity-80 font-sans leading-relaxed line-clamp-2 pl-9">"{(ax.payload?.zenith || ax.zenith)}"</p>
                           </div>
@@ -2028,72 +2090,79 @@ function UnderstandableEngine() {
                   )}
 
                   {currentSlide === 5 && (
-                    <div className="flex flex-col items-center justify-center min-h-[400px] text-center gap-12">
-                         {isCommunityShared ? (
-                           <motion.div 
-                             initial={{ scale: 0.9, opacity: 0 }}
-                             animate={{ scale: 1, opacity: 1 }}
-                             className="text-emerald-600 space-y-6 p-12 bg-emerald-50 rounded-3xl border-2 border-emerald-200"
-                           >
-                              <div className="text-8xl">🌎</div>
-                              <p className="font-display text-3xl font-black uppercase tracking-[0.1em]">Shared with Community!</p>
-                              <p className="font-sans text-lg opacity-70">Your insight is now live on the community board.</p>
-                              <button 
-                                onClick={() => { setConcept(""); setResult(null); setCurrentSlide(0); }}
-                                className="mt-8 font-mono text-sm uppercase tracking-[0.2em] font-bold border-b-2 border-emerald-600 hover:text-emerald-700"
-                              >
-                                Done. Start new?
-                              </button>
-                           </motion.div>
-                         ) : saveSuccess ? (
-                           <motion.div 
-                             initial={{ scale: 0.9, opacity: 0 }}
-                             animate={{ scale: 1, opacity: 1 }}
-                             className="text-accent space-y-6 p-12 bg-accent/5 rounded-3xl border-2 border-accent/20 flex flex-col items-center"
-                           >
-                              <div className="text-8xl">✨</div>
-                              <p className="font-display text-3xl font-black uppercase tracking-[0.1em]">Insight Locked In!</p>
-                              <p className="font-sans text-lg opacity-70">This is now part of your personal collection.</p>
-                              
-                              <div className="flex flex-col gap-4 w-full mt-8">
-                                <button 
-                                  onClick={shareToCommunity}
-                                  className="w-full bg-emerald-500 text-white font-display text-xl font-bold py-5 rounded-2xl shadow-lg shadow-emerald-500/20 hover:scale-[1.02] transition-all"
-                                >
-                                  Share to Community 🌎
-                                </button>
-                                <button 
-                                  onClick={() => { setConcept(""); setResult(null); setCurrentSlide(0); }}
-                                  className="mt-4 font-mono text-xs uppercase tracking-[0.2em] font-bold opacity-50 hover:opacity-100 transition-opacity"
-                                >
-                                  Return Home
-                                </button>
-                              </div>
-                           </motion.div>
-                         ) : (
-                           <div className="flex flex-col gap-10 w-full max-w-xl">
-                              <p className="font-display text-4xl md:text-5xl font-black text-ink">Keep Learning?</p>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                               <button 
-                                 onClick={() => { setCurrentSlide(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                 className="w-full font-mono text-sm uppercase tracking-[0.2em] font-bold text-ink/50 py-5 border-2 border-ink/10 rounded-2xl hover:bg-ink/5 transition-all text-left px-8"
-                               >
-                                 Recycle Concept
-                               </button>
-                               <button 
-                                 onClick={saveToLibrary}
-                                 className="w-full font-display text-xl font-bold bg-accent text-white py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-accent/20"
-                               >
-                                 I Understood This!
-                               </button>
-                               </div>
-                           </div>
-                         )}
-                    </div>
+                    <AnimatePresence mode="wait">
+                      {showSuccessFeedback ? (
+                        <motion.div
+                          key="success"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex flex-col items-center justify-center min-h-[400px] text-center gap-8 p-8"
+                        >
+                          <div className="text-8xl">🔐</div>
+                          <div className="space-y-4">
+                            <h2 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tight text-ink">Concept Locked in Vault!</h2>
+                            <p className="font-sans text-xl opacity-70">Thank you for contributing to the council of understanding.</p>
+                          </div>
+                          <button
+                            onClick={() => { 
+                              setShowSuccessFeedback(false);
+                              setConcept(""); 
+                              setResult(null); 
+                              setCurrentSlide(0); 
+                            }}
+                            className="px-10 py-5 bg-accent text-bg rounded-3xl font-display font-black text-xl uppercase tracking-tighter hover:scale-105 transition-transform"
+                          >
+                            Explore New Concept
+                          </button>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="buttons"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex flex-col items-center justify-center min-h-[400px] text-center gap-12 p-8"
+                        >
+                          <div className="space-y-4">
+                            <h2 className="font-display text-4xl md:text-6xl font-black uppercase tracking-tight text-ink">How did that land?</h2>
+                            <p className="font-sans text-xl opacity-60">This lesson was using the {currentStyle} style for learning! Did it help you understand?</p>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+                            <button 
+                              onClick={() => { 
+                                triggerSuccessConfetti();
+                                setShowSuccessFeedback(true);
+                              }}
+                              className="p-8 bg-accent text-bg rounded-3xl font-display font-black text-2xl uppercase tracking-tighter hover:scale-105 transition-transform shadow-lg shadow-accent/20"
+                            >
+                               I understand now!
+                            </button>
+                            
+                            <div className="flex flex-col gap-2 p-6 border border-border rounded-3xl bg-surface/50">
+                                <p className="text-xs opacity-60 font-mono uppercase tracking-widest mb-2">Try a different style:</p>
+                                <div className="flex flex-col gap-2">
+                                    {LEARNING_STYLES.filter(s => s !== currentStyle).map((style) => (
+                                        <button
+                                            key={style}
+                                            onClick={() => {
+                                                const styleIndex = LEARNING_STYLES.indexOf(style);
+                                                understandTopic(concept, styleIndex);
+                                            }}
+                                            className="px-4 py-3 text-xs font-mono uppercase tracking-widest rounded-xl border border-border hover:border-accent hover:bg-accent/5 transition-all text-ink/70"
+                                        >
+                                            {style}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   )}
                   </motion.div>
                 </AnimatePresence>
+
 
                 {/* Slider Navigation - Next Button - Bottom Right */}
                 {currentSlide < 5 && (
@@ -2153,7 +2222,7 @@ function UnderstandableEngine() {
                       </button>
                     </motion.div>
                   ) : loading ? (
-                    <div className="flex flex-col items-center justify-center p-12 text-center">
+                    <div className="fixed inset-0 z-[100] bg-bg flex flex-col items-center justify-center p-12 text-center">
                       <div className="relative mb-8">
                         <div className="text-6xl animate-bounce">👻</div>
                         <div className="absolute -top-4 -right-4 w-6 h-6 bg-accent rounded-full animate-pulse" />
