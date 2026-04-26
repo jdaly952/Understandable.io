@@ -7,11 +7,12 @@ workflows:
       app_store_connect: codemagic
     environment:
       node: 22
+      groups:
+        - default
       vars:
         BUNDLE_ID: io.understandable.app
         XCODE_PROJECT: ios/App/App.xcodeproj
         XCODE_SCHEME: App
-        GEMINI_API_KEY: AIzaSyDLTeKZoY-ujmigkGYDPLBmkrRtzrFt82w
     scripts:
       - name: Install dependencies
         script: npm ci
