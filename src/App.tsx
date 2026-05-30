@@ -536,22 +536,38 @@ const ELI9Card = ({ content }: { content?: string }) => {
 const UnderstandableLogo = ({ className }: { className?: string }) => (
   <div className={`flex items-center gap-2 md:gap-4 ${className}`}>
     <div className="relative w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
-      {/* Understandable.io Logo: A U inside a 3D isometric cube with intersecting center lines */}
-      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-accent">
-        {/* Isometric Cube edges */}
+      <SageTheGhost size={32} className="absolute -top-4 -left-4 -rotate-12 opacity-40 md:opacity-100" />
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-accent relative z-10">
         <path d="M50 10 L90 30 L90 70 L50 90 L10 70 L10 30 Z" fill="none" stroke="currentColor" strokeWidth="2" />
         <path d="M50 10 L50 90" fill="none" stroke="currentColor" strokeWidth="2" />
         <path d="M10 30 L50 50 L90 30" fill="none" stroke="currentColor" strokeWidth="2" />
         <path d="M10 70 L50 50" fill="none" stroke="currentColor" strokeWidth="2" />
         <path d="M90 70 L50 50" fill="none" stroke="currentColor" strokeWidth="2" />
-        
-        {/* U shape in the center */}
         <path d="M40 40 L40 55 Q40 65 50 65 Q60 65 60 55 L60 40" 
               stroke="currentColor" strokeWidth="6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     </div>
-    <span className="hidden md:block font-display text-xl md:text-3xl font-black uppercase tracking-[0.2em] text-ink">Understandable.io</span>
+    <div className="flex items-baseline gap-2">
+      <span className="hidden md:block font-display text-xl md:text-3xl font-black uppercase tracking-[0.2em] text-ink">Understandable.io</span>
+    </div>
   </div>
+);
+
+const SageTheGhost = ({ className = "", size = 24 }: { className?: string, size?: number }) => (
+  <motion.div
+    animate={{ 
+      y: [0, -4, 0],
+      rotate: [-5, 5, -5]
+    }}
+    transition={{ 
+      duration: 3, 
+      repeat: Infinity, 
+      ease: "easeInOut" 
+    }}
+    className={`inline-flex items-center justify-center drop-shadow-[0_2px_4px_rgba(166,139,106,0.2)] ${className}`}
+  >
+    <Ghost size={size} strokeWidth={1.5} />
+  </motion.div>
 );
 
 const SectionLabel = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -788,7 +804,6 @@ function UnderstandableEngine() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isCommunityShared, setIsCommunityShared] = useState(false);
-  const [showCommunity, setShowCommunity] = useState(false);
   const [communityShares, setCommunityShares] = useState<any[]>([]);
   
   const deleteTopic = async (topicId: string) => {
@@ -814,9 +829,39 @@ function UnderstandableEngine() {
     </div>
   );
 
-  // --- Account/Index State ---
-  const [showIndex, setShowIndex] = useState(false);
+  // --- App View State ---
+  // Valid views: "explore" | "result" | "history" | "library"
+  type AppView = "explore" | "result" | "history" | "library";
+  const [appView, setAppView] = useState<AppView>("explore");
+
+  // Derived helpers so existing internal logic doesn't all need rewiring at once
+  const showIndex = appView === "history" || appView === "library";
+  const setShowIndex = (val: boolean) => {
+    if (!val) setAppView(result ? "result" : "explore");
+  };
+  const showCommunity = false; // Community removed until fully wired
+
+  // --- Overlay State ---
   const [showAccount, setShowAccount] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
+        setShowAccount(false);
+      }
+    };
+
+    if (showAccount) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAccount]);
   const [bannerBgClass, setBannerBgClass] = useState("bg-accent/5");
   const [bannerTextClass, setBannerTextClass] = useState("text-accent");
 
@@ -827,6 +872,12 @@ function UnderstandableEngine() {
     }
   }, [concept]);
   const [indexType, setIndexType] = useState<"personal" | "global">("personal");
+
+  // Keep indexType in sync with appView
+  useEffect(() => {
+    if (appView === "history") setIndexType("personal");
+    if (appView === "library") setIndexType("global");
+  }, [appView]);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [savedUnderstandables, setSavedUnderstandables] = useState<any[]>([]);
   const [category, setCategory] = useState<string>("General");
@@ -1172,8 +1223,7 @@ function UnderstandableEngine() {
         }
 
         setResult(data);
-
-        // Auto-scroll to result
+        setAppView("result");
         setTimeout(() => {
           resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 500);
@@ -1328,16 +1378,16 @@ function UnderstandableEngine() {
             >
               <Telescope size={64} strokeWidth={1.5} />
             </motion.div>
-            <motion.div
-              animate={{ 
-                y: [0, -25, 0],
-                rotate: [0, -15, 15, 0]
-              }}
-              transition={{ duration: 2.5, repeat: Infinity, delay: 0.2 }}
-              className="text-red-400"
-            >
-              <Ghost size={80} strokeWidth={1.5} />
-            </motion.div>
+            <div className="relative group">
+              <SageTheGhost size={80} className="text-red-400" />
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                whileHover={{ opacity: 1, y: 0 }}
+                className="absolute -top-8 left-1/2 -translate-x-1/2 bg-ink text-white text-[10px] font-mono px-2 py-1 rounded-full whitespace-nowrap"
+              >
+                SAGE
+              </motion.div>
+            </div>
             <motion.div
               animate={{ 
                 y: [0, -10, 0],
@@ -1434,13 +1484,13 @@ function UnderstandableEngine() {
                   {onboardingStep === 0 && (
                     <div className="flex flex-col gap-6 md:gap-10">
                       <div className="w-16 h-16 md:w-24 md:h-24 bg-yellow-100 rounded-[1rem] md:rounded-[2rem] flex items-center justify-center text-yellow-600 shadow-inner">
-                        <Lightbulb size={32} className="md:w-[56px] md:h-[56px]" strokeWidth={2.5} />
+                        <SageTheGhost size={56} className="md:w-[80%] md:h-[80%]" />
                       </div>
                       <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
-                        Ask about <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">anything!</span>
+                        I'm Sage! Let's explore <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">everything!</span>
                       </h2>
                       <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
-                        Curious about the moon? Or why toast is crunchy? Just type it in and we'll tell you a story that makes it clear as day! 🎈
+                        Curious about the moon? Or why toast is crunchy? Just type it in and I'll tell you a story that makes it clear as day! 🎈
                       </p>
                     </div>
                   )}
@@ -1448,13 +1498,13 @@ function UnderstandableEngine() {
                   {onboardingStep === 1 && (
                     <div className="flex flex-col gap-6 md:gap-10">
                       <div className="w-16 h-16 md:w-24 md:h-24 bg-sky-100 rounded-[1rem] md:rounded-[2rem] flex items-center justify-center text-sky-600 shadow-inner">
-                        <Smile size={32} className="md:w-[56px] md:h-[56px]" strokeWidth={2.5} />
+                        <SageTheGhost size={56} className="md:w-[80%] md:h-[80%]" />
                       </div>
                       <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
-                        It grows <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">with you!</span>
+                        I learn <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">with you!</span>
                       </h2>
                       <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
-                        The more we talk, the better I get at explaining things just the way you like. It's like having a friend who always knows the best way to help! 🌱
+                        The more we talk, the better I get at explaining things just the way you like. I'm the friend who always knows the best way to help! 🌱
                       </p>
                     </div>
                   )}
@@ -1462,13 +1512,13 @@ function UnderstandableEngine() {
                   {onboardingStep === 2 && (
                     <div className="flex flex-col gap-6 md:gap-10">
                       <div className="w-16 h-16 md:w-24 md:h-24 bg-rose-100 rounded-[1rem] md:rounded-[2rem] flex items-center justify-center text-rose-600 shadow-inner">
-                        <Heart size={32} className="md:w-[56px] md:h-[56px]" strokeWidth={2.5} />
+                        <SageTheGhost size={56} className="md:w-[80%] md:h-[80%]" />
                       </div>
                       <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
                          High-fives for <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">Aha's!</span>
                       </h2>
                       <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
-                        When a story clicks for you, give it a thumbs up. It helps everyone else find the best secrets to understanding too! ✨
+                        When a story clicks for you, let me know! It helps me remember the best secrets to understanding for everyone else too! ✨
                       </p>
                     </div>
                   )}
@@ -1476,13 +1526,13 @@ function UnderstandableEngine() {
                   {onboardingStep === 3 && (
                     <div className="flex flex-col gap-6 md:gap-10">
                       <div className="w-16 h-16 md:w-24 md:h-24 bg-indigo-100 rounded-[1rem] md:rounded-[2rem] flex items-center justify-center text-indigo-600 shadow-inner">
-                        <Sparkles size={32} className="md:w-[56px] md:h-[56px]" strokeWidth={2.5} />
+                        <SageTheGhost size={56} className="md:w-[80%] md:h-[80%]" />
                       </div>
                       <h2 className="font-display text-4xl md:text-7xl font-black leading-tight">
-                         Building your <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">world!</span>
+                         I'm building <span className="text-accent underline decoration-[6px] md:decoration-[12px] underline-offset-[4px] md:underline-offset-[8px] decoration-accent/20">your world!</span>
                       </h2>
                       <p className="font-sans text-lg md:text-3xl font-bold leading-relaxed text-slate-600">
-                        Learning is like building with blocks. We start at the bottom and work our way up until you have a big, beautiful tower of knowledge! 🧱
+                        I start at the bottom and work my way up until we have a big, beautiful tower of knowledge! Ready to go? 🧱
                       </p>
                     </div>
                   )}
@@ -1530,7 +1580,7 @@ function UnderstandableEngine() {
           <div className="flex items-center gap-4 md:gap-8">
             <Tooltip text="Go Home">
               <div className="flex flex-col group cursor-pointer transition-all hover:opacity-100 uppercase text-ink" 
-                onClick={() => { setConcept(""); setResult(null); setShowIndex(false); setShowAccount(false); }}>
+                onClick={() => { setAppView("explore"); setShowAccount(false); }}>
                 <div className="flex items-center gap-3 md:gap-4">
                   <UnderstandableLogo />
                   <span className="hidden sm:block h-px w-6 md:w-10 bg-current opacity-30" />
@@ -1540,27 +1590,9 @@ function UnderstandableEngine() {
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
-            {result && (
-              <Tooltip text="Start a new search">
-                <button 
-                  onClick={() => { setConcept(""); setResult(null); setShowIndex(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                  className="md:hidden flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest font-black text-accent bg-accent/5 px-4 py-2 rounded-full border border-accent/20"
-                >
-                  <Search size={14} /> New Search
-                </button>
-              </Tooltip>
-            )}
-            {authReady && (
-              <button 
-                onClick={() => alert("Community Board is coming soon!")}
-                className="hidden md:flex items-center gap-2 font-display text-sm uppercase tracking-widest font-black text-gray-500 bg-gray-50 px-5 py-2.5 rounded-full border border-gray-200 cursor-not-allowed transition-all"
-              >
-                Community (Coming Soon) 🌎
-              </button>
-            )}
             {authReady && (
               user ? (
-                <div className="relative">
+                <div className="relative" ref={accountRef}>
                   <Tooltip text="My Profile">
                     <button 
                       onClick={() => setShowAccount(!showAccount)}
@@ -1583,14 +1615,12 @@ function UnderstandableEngine() {
                   {/* Account Dropdown */}
                   <AnimatePresence>
                     {showAccount && (
-                      <div className="fixed inset-0 z-40" onClick={() => setShowAccount(false)}>
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute right-0 md:right-0 top-16 md:top-20 w-[calc(100vw-32px)] sm:w-80 md:w-96 z-50 p-6 md:p-8 border-2 border-border shadow-[16px_16px_0_0_rgba(0,0,0,0.03)] bg-surface text-ink rounded-3xl overflow-y-auto max-h-[80vh] custom-scrollbar"
-                        >
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute right-0 top-16 md:top-20 w-[calc(100vw-32px)] sm:w-80 md:w-96 z-50 p-6 md:p-8 border-2 border-border shadow-[16px_16px_0_0_rgba(0,0,0,0.03)] bg-surface text-ink rounded-3xl overflow-y-auto max-h-[80vh] custom-scrollbar"
+                      >
                    <div className="flex flex-col gap-8">
                           <div className="flex flex-col gap-4 border-b-2 border-border pb-8">
                             <span className="font-mono text-xs uppercase tracking-[0.3em] font-black opacity-60">My Account</span>
@@ -1602,27 +1632,32 @@ function UnderstandableEngine() {
                           </div>
 
                           <div className="flex flex-col gap-6">
-                            <span className="font-mono text-xs uppercase tracking-[0.3em] font-black opacity-60">Learning History</span>
+                            <span className="font-mono text-xs uppercase tracking-[0.3em] font-black opacity-60">Navigate</span>
                             <button 
-                              onClick={() => { setShowAccount(false); setShowIndex(true); setIndexType('personal'); }}
-                              className="w-full text-left font-mono text-sm uppercase tracking-[0.2em] font-bold hover:text-accent transition-all flex items-center justify-between group"
+                              onClick={() => { setShowAccount(false); setAppView("explore"); }}
+                              className={`w-full text-left font-mono text-sm uppercase tracking-[0.2em] font-bold hover:text-accent transition-all flex items-center justify-between group ${appView === "explore" ? "text-accent" : ""}`}
                             >
-                              My Vault
+                              Explore
                             </button>
                             <button 
-                              onClick={() => { setShowAccount(false); setShowIndex(true); setIndexType('global'); }}
-                              className="w-full text-left font-mono text-sm uppercase tracking-[0.2em] font-bold hover:text-accent transition-all flex items-center justify-between group"
+                              onClick={() => { setShowAccount(false); setAppView("history"); }}
+                              className={`w-full text-left font-mono text-sm uppercase tracking-[0.2em] font-bold hover:text-accent transition-all flex items-center justify-between group ${appView === "history" ? "text-accent" : ""}`}
                             >
-                              Index Library
+                              My History
+                            </button>
+                            <button 
+                              onClick={() => { setShowAccount(false); setAppView("library"); }}
+                              className={`w-full text-left font-mono text-sm uppercase tracking-[0.2em] font-bold hover:text-accent transition-all flex items-center justify-between group ${appView === "library" ? "text-accent" : ""}`}
+                            >
+                              Library
                             </button>
                           </div>
-
                           <div className="flex flex-col gap-6 border-t-2 border-border pt-8">
-                            <button 
-                              onClick={() => alert("Community Board is coming soon!")}
-                              className="font-mono text-sm uppercase tracking-[0.2em] font-black text-gray-400 cursor-not-allowed transition-all text-left"
+                            <button
+                              onClick={() => { setConcept(""); setResult(null); setAppView("explore"); setShowAccount(false); }}
+                              className="w-full text-left font-mono text-sm uppercase tracking-[0.2em] font-bold hover:text-accent transition-all opacity-60 hover:opacity-100"
                             >
-                              Community (Coming Soon)
+                              New Search
                             </button>
                           </div>
 
@@ -1636,9 +1671,8 @@ function UnderstandableEngine() {
                           </div>
                         </div>
                       </motion.div>
-                    </div>
-                  )}
-                </AnimatePresence>
+                    )}
+                  </AnimatePresence>
               </div>
             ) : (
                 <Tooltip text="Sign in to your account">
@@ -1663,7 +1697,7 @@ function UnderstandableEngine() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className={`w-full md:w-[32%] flex flex-col p-6 md:p-10 lg:px-20 lg:py-32 border-b md:border-b-0 md:sticky md:top-16 md:h-[calc(100vh-80px)] overflow-y-auto no-scrollbar
-                ${result ? 'hidden md:flex' : 'flex'}
+                ${appView === "result" ? 'hidden md:flex' : 'flex'}
               `}
             >
             <div className="w-full md:max-w-md md:ml-auto">
@@ -1784,12 +1818,13 @@ function UnderstandableEngine() {
                 </div>
               </div>
 
-            <div className={`space-y-8 max-w-xs transition-all duration-1000
+            <div className={`space-y-8 max-w-xs transition-all duration-1000 flex flex-col items-start
               ${loading ? "opacity-100" : "opacity-80"}
             `}>
-              <div className="h-3 w-40 bg-accent" />
+              {loading && <SageTheGhost size={48} className="mb-2" />}
+              {!loading && <div className="h-3 w-40 bg-accent" />}
               <p className="text-lg font-mono uppercase tracking-[0.4em] leading-loose text-current font-black">
-                {loading ? "Thinking about your topic..." : "Ready to start"}
+                {loading ? "Sage is thinking..." : "Ready to start"}
               </p>
             </div>
           </div>
@@ -1798,6 +1833,25 @@ function UnderstandableEngine() {
 
         {/* RESULT COLUMN */}
         <section ref={resultRef} className={`w-full ${!showIndex ? 'md:w-[68%]' : 'md:w-full'} flex flex-col p-4 md:p-8 lg:px-12 transition-all duration-1000 bg-bg`}>
+
+          {/* Mobile result action strip — hidden on desktop */}
+          {result && !showIndex && (
+            <div className="flex items-center justify-between mb-4 md:hidden">
+              <button
+                onClick={() => setAppView("explore")}
+                className="font-mono text-[10px] uppercase tracking-widest font-black text-ink opacity-60 hover:opacity-100 transition-opacity flex items-center gap-2"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => { setConcept(""); setResult(null); setAppView("explore"); }}
+                className="font-mono text-[10px] uppercase tracking-widest font-black text-accent bg-accent/5 px-4 py-2 rounded-full border border-accent/20"
+              >
+                New Search
+              </button>
+            </div>
+          )}
+
           <div className="flex-1 flex flex-col justify-start py-4">
             <AnimatePresence mode="wait">
             {showCommunity ? (
@@ -1813,7 +1867,7 @@ function UnderstandableEngine() {
                     <h2 className="font-display text-4xl md:text-7xl font-black uppercase tracking-tight text-emerald-600">Community Board 🌎</h2>
                     <p className="font-mono text-sm uppercase tracking-widest opacity-60">Insights that clicked for everyone</p>
                   </div>
-                  <button onClick={() => setShowCommunity(false)} className="w-full md:w-auto font-mono text-xs md:text-lg uppercase tracking-widest font-black border-2 border-ink px-8 py-4 md:px-12 md:py-6 hover:bg-ink hover:text-bg transition-all shadow-[8px_8px_0_0_rgba(16,185,129,0.1)] rounded-xl text-ink">← Back to Synthesis</button>
+                  <button onClick={() => setAppView(result ? "result" : "explore")} className="w-full md:w-auto font-mono text-xs md:text-lg uppercase tracking-widest font-black border-2 border-ink px-8 py-4 md:px-12 md:py-6 hover:bg-ink hover:text-bg transition-all shadow-[8px_8px_0_0_rgba(16,185,129,0.1)] rounded-xl text-ink">← Back</button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-10 custom-scrollbar">
@@ -1824,8 +1878,7 @@ function UnderstandableEngine() {
                         onClick={() => {
                           setResult(share.payload);
                           setConcept(share.concept);
-                          setShowCommunity(false);
-                          setShowIndex(false);
+                          setAppView("result");
                           setCurrentSlide(0);
                         }}
                         className="group flex flex-col items-start p-8 transition-all hover:bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 hover:border-emerald-500 text-left gap-6 shadow-sm hover:shadow-xl hover:-translate-y-1"
@@ -1857,7 +1910,7 @@ function UnderstandableEngine() {
                     ))}
                     {communityShares.length === 0 && (
                       <div className="col-span-full py-40 text-center flex flex-col items-center gap-8">
-                         <div className="text-8xl opacity-20">🍃</div>
+                         <SageTheGhost size={120} className="opacity-20" />
                          <p className="font-sans text-4xl opacity-70 leading-normal max-w-lg">The community board is currently silent. Be the first to share an insight! ✨</p>
                       </div>
                     )}
@@ -1874,21 +1927,23 @@ function UnderstandableEngine() {
               >
                 <div className="mb-12 md:mb-24 flex flex-col md:flex-row items-start md:items-center justify-between border-b-4 md:border-b-8 border-current pb-12 md:pb-20 gap-8">
                   <div className="flex flex-wrap gap-8 md:gap-24">
-                    {["personal", "global"].map(type => (
+                    {[
+                      { view: "history" as AppView, label: "My History" },
+                      { view: "library" as AppView, label: "Library" },
+                    ].map(({ view, label }) => (
                       <button 
-                        key={type}
-                        onClick={() => setIndexType(type as any)}
+                        key={view}
+                        onClick={() => setAppView(view)}
                         className={`font-sans text-xl md:text-2xl font-black uppercase tracking-[0.2em] md:tracking-[0.4em] transition-all
-                          ${indexType === type ? "scale-105 md:scale-110 text-accent underline underline-offset-8 md:underline-offset-[24px] decoration-4 md:decoration-8" : "opacity-30 hover:opacity-100"}
+                          ${appView === view ? "scale-105 md:scale-110 text-accent underline underline-offset-8 md:underline-offset-[24px] decoration-4 md:decoration-8" : "opacity-30 hover:opacity-100"}
                         `}
                       >
-                        {type === "personal" ? "My Past Topics" : "Explore"}
+                        {label}
                       </button>
                     ))}
                   </div>
-                  <button onClick={() => setShowIndex(false)} className="w-full md:w-auto font-mono text-xs md:text-lg uppercase tracking-widest font-black border-2 border-ink px-8 py-4 md:px-12 md:py-6 hover:bg-ink hover:text-bg transition-all shadow-[8px_8px_0_0_rgba(0,0,0,0.1)] md:shadow-[12px_12px_0_0_rgba(0,0,0,0.1)] rounded-xl text-ink">← Back to Synthesis</button>
-                </div>
-                
+                  </div>
+                  <button onClick={() => setAppView(result ? "result" : "explore")} className="w-full md:w-auto font-mono text-xs md:text-lg uppercase tracking-widest font-black border-2 border-ink px-8 py-4 md:px-12 md:py-6 hover:bg-ink hover:text-bg transition-all shadow-[8px_8px_0_0_rgba(0,0,0,0.1)] md:shadow-[12px_12px_0_0_rgba(0,0,0,0.1)] rounded-xl text-ink">← Back</button>
                 <div className="flex-1 overflow-y-auto pr-10 custom-scrollbar">
                   {loadingIndex ? (
                     <div className="h-full flex items-center justify-center font-mono text-2xl uppercase tracking-[0.4em] animate-pulse font-black italic">Retrieving Encrypted Index...</div>
@@ -1903,7 +1958,7 @@ function UnderstandableEngine() {
                           onClick={() => {
                             setResult(ax.payload || ax);
                             setConcept(ax.concept);
-                            setShowIndex(false);
+                            setAppView("result");
                             setBannerBgClass(ax.bannerBgClass || "bg-accent/5");                
                             setBannerTextClass(ax.bannerTextClass || "text-accent");
                           }}
@@ -1938,15 +1993,18 @@ function UnderstandableEngine() {
                         ? Array.from(new Map(savedUnderstandables.map(item => [item.concept, item])).values()) 
                         : globalLogs
                       ).length === 0 && (
-                        <div className="py-40 text-center font-sans text-4xl opacity-70 leading-normal">No traces found in current sector.<br/>Awaiting synthesis.</div>
+                        <div className="col-span-full py-40 text-center font-sans text-4xl opacity-70 leading-normal flex flex-col items-center gap-8">
+                           <SageTheGhost size={120} className="opacity-20" />
+                           <p>No traces found in current sector.<br/>Awaiting synthesis.</p>
+                        </div>
                       )}
                       
                       <div className="mt-12 flex justify-center">
                         <button 
-                          onClick={() => setShowIndex(false)}
+                          onClick={() => setAppView(result ? "result" : "explore")}
                           className="font-mono text-sm md:text-xl uppercase tracking-[0.4em] font-black border-b-4 border-current pb-4 hover:text-accent hover:border-accent transition-all"
                         >
-                          ← Return to Exploration
+                          ← Back
                         </button>
                       </div>
                     </div>
@@ -1962,10 +2020,23 @@ function UnderstandableEngine() {
                 transition={{ duration: 0.8 }}
                 className="w-full max-w-6xl mx-auto flex flex-col"
               >
-                <div className={`w-full py-6 px-8 mb-8 rounded-2xl shadow-sm border ${bannerBgClass} ${bannerTextClass.replace('text-accent', 'text-ink/60')}`}>
-                   <h1 className="text-xl md:text-3xl font-display font-black uppercase tracking-tight">
+                <div className={`w-full py-6 px-8 mb-8 rounded-2xl shadow-sm border flex items-center justify-between gap-4 ${bannerBgClass} ${bannerTextClass.replace('text-accent', 'text-ink/60')}`}>
+                   <h1 className="min-w-0 text-xl md:text-3xl font-display font-black uppercase tracking-tight">
                      {concept}
                    </h1>
+                   {saveSuccess ? (
+                     <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest font-black text-accent flex items-center gap-2">
+                       <CheckCircle2 size={14} /> Saved
+                     </span>
+                   ) : (
+                     <button
+                       onClick={saveToLibrary}
+                       disabled={saving}
+                       className="shrink-0 font-mono text-[10px] uppercase tracking-widest font-black border border-current/30 px-4 py-2 rounded-full hover:bg-black/5 transition-all disabled:opacity-40"
+                     >
+                       {saving ? "Saving..." : user ? "Save" : "Sign in to save"}
+                     </button>
+                   )}
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -2002,15 +2073,6 @@ function UnderstandableEngine() {
                         <div className="flex justify-center mt-6">
                           <ELI9Card content={result.axis1?.stateA_eli9} />
                         </div>
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => understandTopic()}
-                            className="flex items-center gap-2 px-4 py-2 mt-2 text-[10px] font-mono uppercase tracking-widest text-ink/40 hover:text-accent transition-all border border-ink/10 rounded-full"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            Recycle Example
-                          </button>
-                        </div>
                      </div>
                   )}
 
@@ -2026,15 +2088,6 @@ function UnderstandableEngine() {
                         </p>
                         <div className="flex justify-center mt-6">
                           <ELI9Card content={result.axis1?.stateB_eli9} />
-                        </div>
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => understandTopic()}
-                            className="flex items-center gap-2 px-4 py-2 mt-2 text-[10px] font-mono uppercase tracking-widest text-ink/40 hover:text-accent transition-all border border-ink/10 rounded-full"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            Recycle Example
-                          </button>
                         </div>
                     </div>
                   )}
@@ -2052,15 +2105,6 @@ function UnderstandableEngine() {
                            {result.axis2.mechanism}
                         </p>
                         <ELI9Card content={result.axis2.mechanism_eli9} />
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => understandTopic()}
-                            className="flex items-center gap-2 px-4 py-2 mt-2 text-[10px] font-mono uppercase tracking-widest text-ink/40 hover:text-accent transition-all border border-ink/10 rounded-full"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            Recycle Example
-                          </button>
-                        </div>
                     </div>
                   )}
 
@@ -2077,15 +2121,6 @@ function UnderstandableEngine() {
                             "{result.axis3?.zenith || result.zenith}"
                           </p>
                           <ELI9Card content={result.axis3?.zenith_eli9} />
-                          <div className="flex justify-center">
-                            <button
-                                onClick={() => understandTopic()}
-                                className="flex items-center gap-2 px-4 py-2 mt-2 text-[10px] font-mono uppercase tracking-widest text-ink/40 hover:text-accent transition-all border border-ink/10 rounded-full"
-                            >
-                                <RefreshCw className="w-3 h-3" />
-                                Recycle Example
-                            </button>
-                          </div>
                       </div>
                   )}
 
@@ -2100,15 +2135,16 @@ function UnderstandableEngine() {
                         >
                           <div className="text-8xl">🔐</div>
                           <div className="space-y-4">
-                            <h2 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tight text-ink">Concept Locked in Vault!</h2>
-                            <p className="font-sans text-xl opacity-70">Thank you for contributing to the council of understanding.</p>
+                            <h2 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tight text-ink">Got it!</h2>
+                            <p className="font-sans text-xl opacity-70">Saved to your vault. Keep exploring.</p>
                           </div>
                           <button
                             onClick={() => { 
                               setShowSuccessFeedback(false);
                               setConcept(""); 
                               setResult(null); 
-                              setCurrentSlide(0); 
+                              setCurrentSlide(0);
+                              setAppView("explore");
                             }}
                             className="px-10 py-5 bg-accent text-bg rounded-3xl font-display font-black text-xl uppercase tracking-tighter hover:scale-105 transition-transform"
                           >
@@ -2131,6 +2167,7 @@ function UnderstandableEngine() {
                             <button 
                               onClick={() => { 
                                 triggerSuccessConfetti();
+                                saveToLibrary();
                                 setShowSuccessFeedback(true);
                               }}
                               className="p-8 bg-accent text-bg rounded-3xl font-display font-black text-2xl uppercase tracking-tighter hover:scale-105 transition-transform shadow-lg shadow-accent/20"
@@ -2202,7 +2239,7 @@ function UnderstandableEngine() {
                       <div className="absolute top-0 left-0 w-full h-1 bg-red-500" />
                       <AlertTriangle className="w-12 h-12 text-red-500 mb-10 opacity-80" strokeWidth={2.5} />
                       <h3 className="font-mono text-lg uppercase tracking-[0.5em] mb-12 font-black text-red-500">
-                        Synchrony Failure // Flux 429
+                        Something went wrong
                       </h3>
                       <p className={`font-sans font-bold text-2xl leading-relaxed mb-16
                         ${theme === "studio" ? "text-ink" : "text-bg"}
@@ -2218,7 +2255,7 @@ function UnderstandableEngine() {
                           ${theme === "studio" ? "bg-red-500 border-red-500 text-bg hover:bg-bg hover:text-red-500" : "border-ink text-ink hover:bg-ink hover:text-bg"}
                         `}
                       >
-                        Re-initialize Link →
+                        Try again →
                       </button>
                     </motion.div>
                   ) : loading ? (
@@ -2253,7 +2290,7 @@ function UnderstandableEngine() {
                         Welcome back! Your topics are waiting for you.
                       </p>
                       <button 
-                        onClick={() => setShowIndex(true)}
+                        onClick={() => setAppView("history")}
                         className="font-sans text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-[0.2em] px-12 py-10 transition-all border-4 shadow-[12px_12px_0_0_current] hover:translate-x-[-6px] hover:translate-y-[-6px] hover:shadow-[16px_16px_0_0_current] active:translate-x-0 active:translate-y-0 active:shadow-[6px_6px_0_0_current] bg-accent border-accent text-bg rounded-[2rem]"
                       >
                         Pick up where you left off →
